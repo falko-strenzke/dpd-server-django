@@ -1,0 +1,7 @@
+__pycache_
+dpdwebserver/dict/__pycache__/
+dpdwebserver/dict/migrations/__pycache__/
+dpdwebserver/dpdwebserver/__pycache__/
+dpdwebserver/db.sqlite3
+dpdwebserver/dict/mypy.ini
+env/

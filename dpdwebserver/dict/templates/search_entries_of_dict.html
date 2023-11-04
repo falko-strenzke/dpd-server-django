@@ -1,0 +1,28 @@
+<!-- templates/search_results.html -->
+{% extends "base.html" %}
+{% block page_content %}
+<div class="col-md-8 offset-md-2">
+  <h1>Search dictionary</h1>
+  <hr>
+  <form action="" method="get">
+    <input name="q" type="text" placeholder="Search...">
+  </form>
+  <hr>
+  {{ query_string_with_label|linebreaks }}
+  <ul>
+    <table class="table">
+      <thead>
+        <tr>
+          <th> headword </th>
+        </tr>
+      </thead>
+      {% for entry in object_list %}
+      <tr>
+        <td> {{ entry.headword}} </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </ul>
+
+</div>
+{% endblock %}
