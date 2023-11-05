@@ -5,3 +5,5 @@ dpdwebserver/dpdwebserver/__pycache__/
 dpdwebserver/db.sqlite3
 dpdwebserver/dict/mypy.ini
 env/
+dpdwebserver/dict/migrations/0001_initial.py
+dpdwebserver/misc/tools/parse-mdict/__pycache__/

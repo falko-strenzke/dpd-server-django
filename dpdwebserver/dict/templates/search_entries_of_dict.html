@@ -13,16 +13,18 @@
     <table class="table">
       <thead>
         <tr>
-          <th> headword </th>
+          <th> results </th>
         </tr>
       </thead>
       {% for entry in object_list %}
       <tr>
-        <td> {{ entry.headword}} </td>
+        <td> <a href="{% url 'lookup_word' entry.headword %}"> {{ entry.headword }} </a> </td>
       </tr>
       {% endfor %}
     </table>
   </ul>
 
 </div>
+
+
 {% endblock %}
