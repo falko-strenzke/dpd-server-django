@@ -4,8 +4,7 @@
 * `python3 manage.py makemigrations dict`
 * `python3 manage.py migrate dict`
 * `cd misc/tools/parse-mdict`
-* `python3 readmdict.py -b ~/dev/dpd-server-django/dpdwebserver/db.sqlite3 -x /path/to/dpd-mdict.mdx`
-* `python3 readmdict.py -b ../../../db.sqlite3 -x ~/Downloads/dpd-2023-08-01/dpd-mdict.mdx`
+* `python3 readmdict.py -b ../../../db.sqlite3 -x /path/to/dpd-mdict.mdx`
   * Must provide the main DPD MDict file here.
   * Output will show progress bar and indicated some filtered out entries. May take a few minutes.
   * Afterwards, `db.sqlite3` will be about 2GB large.
