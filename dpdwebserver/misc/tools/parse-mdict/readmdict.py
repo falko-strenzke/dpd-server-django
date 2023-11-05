@@ -151,7 +151,7 @@ def write_mdict_to_sqlite_db(conn : sqlite3.Connection, mdx, limit : int):
         i += 1
         key_str = key.decode()
         if not is_lookup_key_valid_for_sqlite_db(key_str):
-            last_filtered_out = "filtered out: "+  key_str 
+            last_filtered_out = "  – filtered out: "+  key_str 
         else:
             if key_str == "" or key_str.isnumeric():
                 continue
