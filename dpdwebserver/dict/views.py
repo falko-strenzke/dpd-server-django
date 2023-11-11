@@ -7,6 +7,7 @@ from django.views.generic import ListView
 from .models import Inflected_Form
 from .models import Headword
 import os
+import markdown
 
 
 def index(request):
@@ -15,7 +16,7 @@ def index(request):
     data_file = open(file_path, 'r')
     data = data_file.read()
     context = {
-        'content': data,
+        'content': markdown.markdown(data),
     }
     return render(request, 'md_content.html', context)
 
