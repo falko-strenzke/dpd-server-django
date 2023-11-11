@@ -6,10 +6,18 @@ from django.views.generic import ListView
 #from django.db.models.query import QuerySet
 from .models import Inflected_Form
 from .models import Headword
+import os
 
 
 def index(request):
-    return HttpResponse("Hello, world. You're at the DPD index.")
+    module_dir = os.path.dirname(__file__)
+    file_path = os.path.join(module_dir, 'content/md/index.md')
+    data_file = open(file_path, 'r')
+    data = data_file.read()
+    context = {
+        'content': data,
+    }
+    return render(request, 'md_content.html', context)
 
 
 class SearchEntriesOfDictView(ListView):
@@ -39,14 +47,16 @@ class SearchEntriesOfDictView(ListView):
     def get_queryset(self): # new
         query = self.request.GET.get("q")
         result = []
+        limit_headwords = 400
+        limit_inflected = 400
         if query is not None:
-            result = Headword.objects.filter(headword__icontains=query)
-            inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form__icontains=query))
+            result = Headword.objects.filter(headword__icontains=query).order_by("headword")[:limit_headwords]
+            inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])
             for inflected_form in inflected_forms:
                 result |= Headword.objects.filter(pk=inflected_form.link_text)
             #    result = QuerySet.union(result, result_hw)
             return result
-        return Headword.objects.filter()
+        return []
 
 
 def lookup_word(request, word):
@@ -65,7 +75,7 @@ def lookup_word(request, word):
         if hw:
             result += hw.desc_html
         else:
-            result = "word not found"
+            result = "<div>word not found</div>"
 
     context = {
         'body': result,
