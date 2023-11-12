@@ -20,4 +20,4 @@ However, the current version of the online DPD has some restrictions:
 - The lookup URL could in principle be used to integrate our Digital Pāḷi Dictionary online into a website-based dictionary in GoldenDict. However, probably due to certain shortcomings in the HTML delivered by our server GoldenDict refuses
 to render the entries unless there is displayed another entry after it.
 - The search functionality is still far from perfect as it limits the results to a few hundred findings without pagination.
-- In contrast to GoldenDict, there is currently no support for navigating to a dictionary word via a link in an entry of the online version of the DPD.
+- In contrast to GoldenDict, in our online version there is currently no support for navigating to a dictionary word via a link in an entry.
