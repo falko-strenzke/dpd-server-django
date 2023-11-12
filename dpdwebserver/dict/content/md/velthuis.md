@@ -11,7 +11,7 @@ Pāḷi / special | your input
 ñ              | ~n
 ṇ              | .n
 ṅ              | :n
-ṁ              | .m
+ṃ              | .m
 ḷ              | .l
 ṛ              | .r
 ṭ              | .t

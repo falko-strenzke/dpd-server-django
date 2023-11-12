@@ -36,15 +36,6 @@ class SearchEntriesOfDictView(ListView):
     model = Inflected_Form
     template_name = "search_entries_of_dict.html"
 
-
-
-    #def get_context_data(self, **kwargs):
-    #    query = self.request.GET.get("q")
-    #    context = super(ListView, self).get_context_data(**kwargs)
-    #    context['query_string_with_label'] = "search query: " + query + "\n" if query not in [None, ''] else ''
-    #    return context
-
-
     def get_context_data(self, **kwargs):
 
         query = self.request.GET.get("q")
