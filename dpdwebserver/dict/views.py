@@ -10,13 +10,20 @@ import os
 import markdown
 
 
-def index(request):
+def render_markdown_file(request : HttpRequest):
+    """
+    render a page from a markdown file. The markdown file is determined by the last element of the URL.
+    """
+    req_path = request.get_full_path()
+    if req_path[-1] == "/":
+        req_path = req_path[:-1]
+    base_name = os.path.basename(req_path)
     module_dir = os.path.dirname(__file__)
-    file_path = os.path.join(module_dir, 'content/md/index.md')
+    file_path = os.path.join(module_dir, f"content/md/{base_name}.md")
     data_file = open(file_path, 'r')
     data = data_file.read()
     context = {
-        'content': markdown.markdown(data),
+        'content': markdown.markdown(data, extensions=['tables']),
     }
     return render(request, 'md_content.html', context)
 

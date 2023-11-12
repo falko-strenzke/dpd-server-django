@@ -20,6 +20,6 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", views.redirect_to_dict, name="index"),
+    path("", views.redirect_to_dpd, name="path_root"),
     path("dict/", include("dict.urls")),
 ]

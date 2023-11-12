@@ -10,7 +10,7 @@
 
   <div>
     <input type="checkbox" id="check_velthuis" name="check_velthuis" checked />
-    <label for="check_velthuis">Use Velthuis character substitution</label>
+    <label for="check_velthuis">Use <a href="{% url 'velthuis_page' %}">Velthuis character substitution</a></label>
   </div>
 
 <script>
@@ -29,6 +29,8 @@ function replaceChars() {
   res = res.replace(/\.n/g, "ṇ");
   res = res.replace(/:n/g, "ṅ");
   res = res.replace(/\.m/g, "ṁ");
+  res = res.replace(/\.l/g, "ḷ");
+  res = res.replace(/\.r/g, "ṛ");
   res = res.replace(/\.t/g, "ṭ");
   res = res.replace(/\.d/g, "ḍ");
   res = res.replace(/:r/g, "√");

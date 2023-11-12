@@ -11,7 +11,7 @@ class UrlInfo:
         if self.is_active():
             return ' active'
         return ''
-   
+
     def disabled_as_text(self):
         if self.is_active():
             return ' disabled'
@@ -25,8 +25,7 @@ class UrlInfo:
 
 def nav_bar_context(request):
     return {'navbar_items': [
-        #UrlInfo('niyamata_home_page', 'Home', request),
-        UrlInfo('index', 'Pāḷi Dictionaries', request),
+        UrlInfo('dpd_page', 'Digital Pāḷi Dictionary', request),
         UrlInfo('search_entries_of_dict', 'Search the DPD', request),
     ]
     }
