@@ -1,7 +1,7 @@
 
 # Velthuis Pāḷi transliteration
 
-Our search page offers an extended variant of the [Velthuis](https://en.wikipedia.org/wiki/Velthuis) transliteration scheme. Characters are replace as you type. In the table below you find the character mapping.
+Our search page offers an extended variant of the [Velthuis](https://en.wikipedia.org/wiki/Velthuis) transliteration scheme. Characters are replaced as you type. In the table below you find the character mapping.
 
 Pāḷi / special | your input
  ----          | ----------
