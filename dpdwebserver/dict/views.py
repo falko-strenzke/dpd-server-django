@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 # Create your views here.
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 from django.views.generic import ListView
 #from django.db.models.query import QuerySet
 from .models import Inflected_Form
@@ -60,8 +60,12 @@ class SearchEntriesOfDictView(ListView):
         return []
 
 
-def lookup_word(request, word):
+def lookup_word(request : HttpRequest, word):
     """Lookup a word in the dictionary dictionary"""
+    #print(request.get_full_path())
+    template = "lookup_word.html"
+    if request.get_full_path().startswith('/dict/dpd/lookup_gd/word/'):
+        template = "lookup_word_gd.html"
     inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form=word))
     result = ""
     if len(inflected_forms) > 0:
@@ -76,10 +80,12 @@ def lookup_word(request, word):
         if hw:
             result += hw.desc_html
         else:
-            result = "<div>word not found</div>"
+            response = HttpResponse()
+            response.status_code = 404
+            return response
 
     context = {
         'body': result,
     }
-    return render(request, 'lookup_word.html', context)
+    return render(request, template, context)
     #return HttpResponse(result)

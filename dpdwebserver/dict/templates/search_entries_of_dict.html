@@ -5,8 +5,38 @@
   <h1>Search dictionary</h1>
   <hr>
   <form action="" method="get">
-    <input name="q" type="text" placeholder="Search...">
+    <input id="search_input" name="q" type="text" placeholder="Search..." onkeyup="replaceChars()" >
   </form>
+
+  <div>
+    <input type="checkbox" id="check_velthuis" name="check_velthuis" checked />
+    <label for="check_velthuis">Use Velthuis character substitution</label>
+  </div>
+
+<script>
+function replaceChars() {
+
+  use_velthuis = $("#check_velthuis").is(":checked");
+  if (!use_velthuis) {
+    return
+  }
+
+  let str = document.getElementById("search_input").value;
+  let res = str.replace(/A/g, "ā");
+  res = res.replace(/U/g, "ū");
+  res = res.replace(/I/g, "ī");
+  res = res.replace(/~n/g, "ñ");
+  res = res.replace(/\.n/g, "ṇ");
+  res = res.replace(/:n/g, "ṅ");
+  res = res.replace(/\.m/g, "ṁ");
+  res = res.replace(/\.t/g, "ṭ");
+  res = res.replace(/\.d/g, "ḍ");
+  res = res.replace(/:r/g, "√");
+  console.log(res)
+  document.getElementById("search_input").value = res;
+}
+</script>
+
   <hr>
   {{ query_string_with_label|linebreaks }}
   <ul>
@@ -28,3 +58,6 @@
 
 
 {% endblock %}
+
+<!-- https://stackoverflow.com/questions/68566171/how-to-replace-characters-while-writing-in-a-form -->
+
