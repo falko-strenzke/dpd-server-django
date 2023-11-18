@@ -41,6 +41,9 @@ class SearchEntriesOfDictView(ListView):
         query = self.request.GET.get("q")
         context = super(ListView, self).get_context_data(**kwargs)
         context['query_string_with_label'] = "search query: " + query + "\n" if query not in [None, ''] else ''
+        context['query_string'] = query if query not in [None, ''] else ''
+        context['search_type'] = self.request.GET.get("search_type")
+
         return context
 
     def get_queryset(self): # new
