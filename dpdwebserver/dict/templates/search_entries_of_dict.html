@@ -9,7 +9,7 @@
 
     <div class="col">
       <div class="form-group">
-        <input class="form-check-input" type="radio" name="search_type" id="search_type1" value="exact" {% if search_type == "exact" %} checked {% endif %}>
+        <input class="form-check-input" type="radio" name="search_type" id="search_type1" value="exact" {% if search_type == "exact" or not search_type %} checked {% endif %}>
         <label class="form-check-label" for="search_type1">
          Exact match
         </label>
@@ -80,7 +80,7 @@ function replaceChars() {
       </thead>
       {% for entry in object_list %}
       <tr>
-        <td> <a href="{% url 'lookup_word' entry.headword %}"> {{ entry.headword }} </a> </td>
+        <td> <a href="{% url 'lookup_word' entry %}"> {{ entry }} </a> </td>
       </tr>
       {% endfor %}
     </table>
