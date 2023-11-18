@@ -45,14 +45,27 @@ class SearchEntriesOfDictView(ListView):
 
     def get_queryset(self): # new
         query = self.request.GET.get("q")
-        result = []
+        search_type = self.request.GET.get("search_type")
+        print(search_type)
         limit_headwords = 400
         limit_inflected = 400
         if query is not None:
-            result = Headword.objects.filter(headword__icontains=query).order_by("headword")[:limit_headwords]
-            inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])
+            result = []
+            inflected_forms : list[Inflected_Form] = []
+            if search_type == 'exact':
+                result = list(Headword.objects.filter(headword__iexact=query).order_by("headword")[:limit_headwords])
+                inflected_forms = list(Inflected_Form.objects.filter(inflected_form__iexact=query).order_by("inflected_form")[:limit_inflected])
+            elif search_type == 'substring_match':
+                result = list(Headword.objects.filter(headword__icontains=query).order_by("headword")[:limit_headwords])
+                inflected_forms = list(Inflected_Form.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])
+            elif search_type == 'starts_with':
+                result = list(Headword.objects.filter(headword__istartswith=query).order_by("headword")[:limit_headwords])
+                inflected_forms = list(Inflected_Form.objects.filter(inflected_form__istartswith=query).order_by("inflected_form")[:limit_inflected])
+            elif search_type == 'ends_with':
+                result = list(Headword.objects.filter(headword__iendswith=query).order_by("headword")[:limit_headwords])
+                inflected_forms = list(Inflected_Form.objects.filter(inflected_form__iendswith=query).order_by("inflected_form")[:limit_inflected])
             for inflected_form in inflected_forms:
-                result |= Headword.objects.filter(pk=inflected_form.link_text)
+                result += list(Headword.objects.filter(pk=inflected_form.link_text))
             #    result = QuerySet.union(result, result_hw)
             return result
         return []

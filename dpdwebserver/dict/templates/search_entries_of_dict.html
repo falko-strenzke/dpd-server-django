@@ -6,6 +6,34 @@
   <hr>
   <form action="" method="get">
     <input id="search_input" name="q" type="text" placeholder="Search..." onkeyup="replaceChars()" >
+
+    <div class="col">
+      <div class="form-group">
+        <input class="form-check-input" type="radio" name="search_type" id="search_type1" value="exact" checked>
+        <label class="form-check-label" for="search_type1">
+         Exact match
+        </label>
+      </div>
+      <div class="form-group">
+        <input class="form-check-input" type="radio" name="search_type" id="search_type2" value="substring_match">
+        <label class="form-check-label" for="search_type2">
+          Substring match
+        </label>
+      </div>
+      <div class="form-group">
+        <input class="form-check-input" type="radio" name="search_type" id="search_type3" value="starts_with">
+        <label class="form-check-label" for="search_type3">
+          Starts with
+        </label>
+      </div>
+      <div class="form-group">
+        <input class="form-check-input" type="radio" name="search_type" id="search_type4" value="ends_with">
+        <label class="form-check-label" for="search_type4">
+          Ends with
+        </label>
+      </div>
+    </div>
+
   </form>
 
   <div>
@@ -38,6 +66,8 @@ function replaceChars() {
   document.getElementById("search_input").value = res;
 }
 </script>
+
+
 
   <hr>
   {{ query_string_with_label|linebreaks }}
