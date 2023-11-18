@@ -1,6 +1,6 @@
 
 
-# Digital Pāḷi Dictionary online
+# <i class="fa fa-book"></i> Digital Pāḷi Dictionary online
 
 This website features an online version of the [Digital Pāḷi Dictionary (DPD)](https://digitalpalidictionary.github.io/). The DPD is a novel Pāḷi dictionary in digital form only and distinguishes itself from the "classical" dictionaries
 through its structured nature that allows reliable lookups of inflected forms, compounds and sandhis. It furthermore has an extensive reliance on the Pāḷi texts itself in that all proclaimed words and forms are matched to their occurrences
