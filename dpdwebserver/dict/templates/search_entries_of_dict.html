@@ -6,8 +6,10 @@
   <hr>
   <form action="" method="get">
     <div class="row">
-    <input id="search_input" name="q" type="text" placeholder="Search..." value="{{ query_string }}" onkeyup="replaceChars()" >
-    <input type="submit" value="Submit">
+      <div class="form-group">
+        <input id="search_input" name="q" type="text" placeholder="Search..." value="{{ query_string }}" onkeyup="replaceChars()" >
+        <input type="submit" value="Submit">
+      </div>
     </div>
     <div class="col">
       <div class="form-group">
