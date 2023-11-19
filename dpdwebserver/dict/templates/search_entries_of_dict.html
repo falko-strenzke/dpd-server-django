@@ -5,8 +5,10 @@
   <h1>Search dictionary</h1>
   <hr>
   <form action="" method="get">
+    <div class="row">
     <input id="search_input" name="q" type="text" placeholder="Search..." value="{{ query_string }}" onkeyup="replaceChars()" >
-
+    <input type="submit" value="Submit">
+    </div>
     <div class="col">
       <div class="form-group">
         <input class="form-check-input" type="radio" name="search_type" id="search_type1" value="exact" {% if search_type == "exact" or not search_type %} checked {% endif %}>

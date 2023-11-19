@@ -765,6 +765,8 @@ if __name__ == '__main__':
                         help='specify the sqlite database file to which to write the extracted entries instead of writing them to disc. Purely numeric keys (headwords) are filtered out with this option.')
     parser.add_argument('-l', '--headword-count-limit', default="",
                         help='specify a limit on the number of processed entries. applies to entries written to sqlite database as well as files written to desc with --file-per-entry')
+    parser.add_argument('-w', '--word-list', default="",
+                        help='specify a file name to which a list of all the headwords and inflected forms are written')
     parser.add_argument('-s', '--substyle', action="store_true",
                         help='substitute style definition if present')
     parser.add_argument('-d', '--datafolder', default="data",
@@ -826,7 +828,24 @@ if __name__ == '__main__':
     if args.extract:
         # write out glos
         if mdx:
-            if args.sqlite_db_file != "":
+            if args.word_list != "":
+                output_fname = args.word_list 
+                word_list_file = open(output_fname, 'w')
+                prev_word = ""
+                for key, value in mdx.items():
+                    key_str = key.decode().strip()
+                    while key_str[-1:].isnumeric():
+                        key_str = key_str[:-1]
+                    key_str.strip()
+                    if key_str == prev_word:
+                        continue
+                    prev_word = key_str
+                    if not re.match(r'^[a-zA-Z0-9\'"?`’1√,.ḥḍḌṭṬāĀūŪīĪḷḶṇṆñÑṅṄŋṁṃ-]+$', key_str):
+                        continue
+                    word_list_file.write(key_str + "\n")
+
+
+            elif args.sqlite_db_file != "":
                 conn : sqlite3.Connection = create_sqlite_connection(args.sqlite_db_file)
                 clean_sqlite_db(conn)
                 write_mdict_to_sqlite_db(conn, mdx, headword_count_limit)
