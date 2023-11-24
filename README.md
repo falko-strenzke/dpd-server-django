@@ -14,8 +14,8 @@
   * Search by substring matches into both headwords and inflected forms, but the results displayed are only the (associated) headwords.
   * Search may fail with error if too many results are returned.
   * No sensible ordering of results.
-* Lookup a word: `http://localhost:8000/dict/dpd/lookup/word/sati`
-  * Word to lookup after last "/"
+* Lookup a word: `http://localhost:8000/dict/dpd/lookup/sati`
+  * Word to lookup after ".../lookup/"
   * Unicode characters can be entered directly into the URL
 
   
