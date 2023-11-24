@@ -23,13 +23,14 @@
 
 # readmdict.py
 
-Can be used to build from the MDict version of the DPD 
+Can be used to build from the MDict version of the DPD
 
 * an sqlite3 database (see above),
 * a word list to build a dictionary file for applications
   * e.g. for vim:
     * `python3 readmdict.py -w dpd-word-list.txt -x /path/to/dpd-mdict.mdx`
+    * the above command creates the file `dpd-word-list.txt`
     * in Vim run `:mkspell pi.utf-8.spl dpd-word-list.txt`
     * then place the file `pi.utf-8.spl` into `~/.vim/spell`
     * and enable spell checking in Vim: `set spell spelllang=en,pi` to have both english and and Pāḷi words recognized
-    * caveats: neither vowel lengthening before *'ti* nor sandhis written with "'" and change of the first wirds final consonant are recognized
+    * caveats: neither vowel lengthening before *'ti* nor sandhis written with "'" which change of the first word's final consonant are recognized
