@@ -139,7 +139,13 @@ def check_links_in_sqlite_db(conn : sqlite3.Connection) -> int:
     return error_cnt
 
 
-def write_mdict_to_sqlite_db(conn : sqlite3.Connection, mdx, limit : int):
+def replace_text_mdict(entry : str, replace_text_for_mdict : str) -> str:
+    if(replace_text_for_mdict == ""):
+        return entry
+    return re.sub(r'MDict', replace_text_for_mdict, entry)
+
+
+def write_mdict_to_sqlite_db(conn : sqlite3.Connection, mdx, replace_text_for_mdict, limit : int):
     """
     Write the whole contents of the MDict to the SQLite DB
     """
@@ -150,12 +156,14 @@ def write_mdict_to_sqlite_db(conn : sqlite3.Connection, mdx, limit : int):
     for key, value in mdx.items():
         i += 1
         key_str = key.decode()
+        value_str = value.decode()
+        value_str = replace_text_mdict(value_str, replace_text_for_mdict)
         if not is_lookup_key_valid_for_sqlite_db(key_str):
-            last_filtered_out = "  – filtered out: "+  key_str 
+            last_filtered_out = "  – filtered out: " + key_str
         else:
             if key_str == "" or key_str.isnumeric():
                 continue
-            cnt_hw += write_new_entry_to_sqlite_db(conn, key_str, value.decode())
+            cnt_hw += write_new_entry_to_sqlite_db(conn, key_str, value_str)
             if limit > 0 and cnt_hw >= limit:
                 break
         printProgressBar(i, all_iters, prefix='Progress:', suffix='Complete' + last_filtered_out, length=50)
@@ -765,6 +773,7 @@ if __name__ == '__main__':
                         help='specify the sqlite database file to which to write the extracted entries instead of writing them to disc. Purely numeric keys (headwords) are filtered out with this option.')
     parser.add_argument('-l', '--headword-count-limit', default="",
                         help='specify a limit on the number of processed entries. applies to entries written to sqlite database as well as files written to desc with --file-per-entry')
+    parser.add_argument('-r', '--replace-text-for-mdict', default="", help='applies only to the case of creating an sqlite3 database. Specifies the text used to replace the text for "MDict" which is part of the URL for the Google Forms for the purpose of reporting suggestions and errors. Overriding this string ensures for the indication of the source of the source the report applies to.')
     parser.add_argument('-w', '--word-list', default="",
                         help='specify a file name to which a list of all the headwords and inflected forms are written')
     parser.add_argument('-s', '--substyle', action="store_true",
@@ -825,6 +834,7 @@ if __name__ == '__main__':
     if args.headword_count_limit != "":
        headword_count_limit = int(args.headword_count_limit)
 
+
     if args.extract:
         # write out glos
         if mdx:
@@ -848,7 +858,7 @@ if __name__ == '__main__':
             elif args.sqlite_db_file != "":
                 conn : sqlite3.Connection = create_sqlite_connection(args.sqlite_db_file)
                 clean_sqlite_db(conn)
-                write_mdict_to_sqlite_db(conn, mdx, headword_count_limit)
+                write_mdict_to_sqlite_db(conn, mdx, args.replace_text_for_mdict, headword_count_limit)
                 conn.commit()
             elif args.file_per_entry:
                 datafolder = os.path.join(os.path.dirname(args.filename), args.datafolder)
