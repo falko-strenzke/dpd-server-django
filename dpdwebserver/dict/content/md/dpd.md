@@ -16,7 +16,7 @@ simply has to be placed at the end of the URL.
 
 However, the current version of the online DPD has some restrictions:
 
-- It features only the core DPD dictionary and not the DPD-deconstructor or DPD-grammar dictionaries that are also part of the DPD.
+- It features the main DPD dictionary and also the DPD-deconstructor and DPD-grammar supplementary dictionaries.
 - The lookup URL could in principle be used to integrate our Digital Pāḷi Dictionary online into a website-based dictionary in GoldenDict. However, probably due to certain shortcomings in the HTML delivered by our server GoldenDict refuses
 to render the entries unless there is displayed another entry after it.
 - The search functionality is still far from perfect as it limits the results to a few hundred findings without pagination.

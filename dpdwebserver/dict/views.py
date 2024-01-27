@@ -99,16 +99,16 @@ def collect_headword_entries_descrs_from_table_headwords(headword : str = "") ->
         result += hw.desc_html
     return result
 
-def collect_headword_entries_descrs_from_suplementary_tables(key_for_suplementary_tables : str = "") -> str:
+def collect_headword_entries_descrs_from_supplementary_tables(key_for_supplementary_tables : str = "") -> str:
     result = ""
     try:
-        gram : Grammar = Grammar.objects.get(pk=key_for_suplementary_tables)
+        gram : Grammar = Grammar.objects.get(pk=key_for_supplementary_tables)
     except Grammar.DoesNotExist:
         gram = None
     if gram:
         result += gram.desc_html
     try:
-        dec : Deconstruction = Deconstruction.objects.get(pk=key_for_suplementary_tables)
+        dec : Deconstruction = Deconstruction.objects.get(pk=key_for_supplementary_tables)
     except Deconstruction.DoesNotExist:
         dec = None
     if dec:
@@ -131,7 +131,7 @@ def lookup_word(request : HttpRequest, word):
     else:
         print("collecting from word directly")
         result += collect_headword_entries_descrs_from_table_headwords(word)
-    result += collect_headword_entries_descrs_from_suplementary_tables(word)
+    result += collect_headword_entries_descrs_from_supplementary_tables(word)
     if result == "":
         response = HttpResponse()
         response.status_code = 404
