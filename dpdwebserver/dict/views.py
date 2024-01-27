@@ -57,30 +57,32 @@ class SearchEntriesOfDictView(ListView):
         limit_inflected = 300
         limit_deconstruction = 300
         limit_grammar = 300
+        set_of_search_results : set[str] = set()
         # TODO: MAKES NO SENSE TO SHOW EACH KEY ("HEADWORD") MULTIPLE TIMES IF IT IS FOUND IN MULTIPLE TABLES FROM THE SET "headword", "deconstruction", and "grammar".
         #       Better show in brackets which types of entries are present for this key.
         if query is not None:
             result : list[str] = []
             if search_type == 'exact':
-                result = [h.headword for h in list(Headword.objects.filter(headword__iexact=query).order_by("headword")[:limit_headwords])]
-                result += list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iexact=query).order_by("inflected_form")[:limit_inflected])]))
-                result += list(set([w.headword for w in list(Deconstruction.objects.filter(headword__iexact=query).order_by("headword")[:limit_deconstruction])]))
-                result += list(set([w.headword for w in list(Grammar.objects.filter(headword__iexact=query).order_by("headword")[:limit_grammar])]))
+                [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__iexact=query).order_by("headword")[:limit_headwords])]
+                set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iexact=query).order_by("inflected_form")[:limit_inflected])]))
+                set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iexact=query).order_by("headword")[:limit_deconstruction])]))
+                set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__iexact=query).order_by("headword")[:limit_grammar])]))
             elif search_type == 'substring_match':
-                result = [h.headword for h in list(Headword.objects.filter(headword__icontains=query).order_by("headword")[:limit_headwords])]
-                result += list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])]))
-                result += list(set([w.headword for w in list(Deconstruction.objects.filter(headword__icontains=query).order_by("headword")[:limit_deconstruction])]))
-                result += list(set([w.headword for w in list(Grammar.objects.filter(headword__icontains=query).order_by("headword")[:limit_grammar])]))
+                [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__icontains=query).order_by("headword")[:limit_headwords])]
+                set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])]))
+                set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__icontains=query).order_by("headword")[:limit_deconstruction])]))
+                set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__icontains=query).order_by("headword")[:limit_grammar])]))
             elif search_type == 'starts_with':
-                result = [h.headword for h in list(Headword.objects.filter(headword__istartswith=query).order_by("headword")[:limit_headwords])]
-                result += list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__istartswith=query).order_by("inflected_form")[:limit_inflected])]))
-                result += list(set([w.headword for w in list(Deconstruction.objects.filter(headword__istartswith=query).order_by("headword")[:limit_deconstruction])]))
-                result += list(set([w.headword for w in list(Grammar.objects.filter(headword__istartswith=query).order_by("headword")[:limit_grammar])]))
+                [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__istartswith=query).order_by("headword")[:limit_headwords])]
+                set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__istartswith=query).order_by("inflected_form")[:limit_inflected])]))
+                set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__istartswith=query).order_by("headword")[:limit_deconstruction])]))
+                set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__istartswith=query).order_by("headword")[:limit_grammar])]))
             elif search_type == 'ends_with':
-                result = [h.headword for h in list(Headword.objects.filter(headword__iendswith=query).order_by("headword")[:limit_headwords])]
-                result += list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iendswith=query).order_by("inflected_form")[:limit_inflected])]))
-                result += list(set([w.headword for w in list(Deconstruction.objects.filter(headword__iendswith=query).order_by("headword")[:limit_deconstruction])]))
-                result += list(set([w.headword for w in list(Grammar.objects.filter(headword__iendswith=query).order_by("headword")[:limit_grammar])]))
+                [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__iendswith=query).order_by("headword")[:limit_headwords])]
+                set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iendswith=query).order_by("inflected_form")[:limit_inflected])]))
+                set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iendswith=query).order_by("headword")[:limit_deconstruction])]))
+                set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__iendswith=query).order_by("headword")[:limit_grammar])]))
+            result = list(set_of_search_results)
             return result
         return []
 
