@@ -7,7 +7,13 @@
 * `python3 readmdict.py -b ../../../db.sqlite3 -x /path/to/dpd-mdict.mdx`
   * Must provide the main DPD MDict file here.
   * Output will show progress bar and indicated some filtered out entries. May take a few minutes.
-  * Afterwards, `db.sqlite3` will be about 2GB large.
+  * Afterwards, the `db.sqlite3` file will be about 2GB large.
+* optionally add the DPD grammar and deconstructor suplementary dictionaries:
+  * `python3 readmdict.py -b ../../../db.sqlite3 -x /path/to/dpd-grammar-mdict.mdx`
+  * `python3 readmdict.py -b ../../../db.sqlite3 -x /path/to/dpd-deconstructor-mdict.mdx`
+  * Now the resulting `db.sqlite3` file will be about 4.5 GB large.
+  * Note that the file names `dpd-grammar-mdict.mdx` and `dpd-deconstructor-mdict.mdx` are used to determine which type of suplementary dictionary is being processed based on the presence of the substrings "grammar" and "deconstructor".
+  Thus do not change the file names.
 * `cd ../../../`
 * `python3 manage.py runserver`
 * Search page: `http://localhost:8000/dict/dpd/search`

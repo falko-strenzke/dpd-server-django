@@ -17,3 +17,19 @@ class Inflected_Form(models.Model):
     """
     inflected_form = models.CharField(max_length=255)
     link_text = models.CharField(max_length=255)
+
+
+class Deconstruction(models.Model):
+    """
+    Table for deconstructor dict of DPD
+    """
+    headword = models.CharField(max_length=255, unique=True, primary_key=True)
+    desc_html = models.CharField(max_length=255)
+
+
+class Grammar(models.Model):
+    """
+    Table for grammar dict of DPD
+    """
+    headword = models.CharField(max_length=255, unique=True, primary_key=True)
+    desc_html = models.CharField(max_length=255)

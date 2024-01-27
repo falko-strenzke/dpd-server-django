@@ -1,13 +1,12 @@
+import os
 from django.shortcuts import render
 
 # Create your views here.
 from django.http import HttpResponse, HttpRequest
 from django.views.generic import ListView
-#from django.db.models.query import QuerySet
-from .models import Inflected_Form
-from .models import Headword
-import os
 import markdown
+#from django.db.models.query import QuerySet
+from .models import Inflected_Form, Headword, Deconstruction, Grammar
 
 
 def render_markdown_file(request : HttpRequest):
@@ -54,24 +53,65 @@ class SearchEntriesOfDictView(ListView):
         query = self.request.GET.get("q")
         search_type = self.request.GET.get("search_type")
         print(search_type)
-        limit_headwords = 400
-        limit_inflected = 400
+        limit_headwords = 300
+        limit_inflected = 300
+        limit_deconstruction = 300
+        limit_grammar = 300
+        # TODO: MAKES NO SENSE TO SHOW EACH KEY ("HEADWORD") MULTIPLE TIMES IF IT IS FOUND IN MULTIPLE TABLES FROM THE SET "headword", "deconstruction", and "grammar".
+        #       Better show in brackets which types of entries are present for this key.
         if query is not None:
             result : list[str] = []
             if search_type == 'exact':
                 result = [h.headword for h in list(Headword.objects.filter(headword__iexact=query).order_by("headword")[:limit_headwords])]
                 result += list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iexact=query).order_by("inflected_form")[:limit_inflected])]))
+                result += list(set([w.headword for w in list(Deconstruction.objects.filter(headword__iexact=query).order_by("headword")[:limit_deconstruction])]))
+                result += list(set([w.headword for w in list(Grammar.objects.filter(headword__iexact=query).order_by("headword")[:limit_grammar])]))
             elif search_type == 'substring_match':
                 result = [h.headword for h in list(Headword.objects.filter(headword__icontains=query).order_by("headword")[:limit_headwords])]
-                result +=  list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])]))
+                result += list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])]))
+                result += list(set([w.headword for w in list(Deconstruction.objects.filter(headword__icontains=query).order_by("headword")[:limit_deconstruction])]))
+                result += list(set([w.headword for w in list(Grammar.objects.filter(headword__icontains=query).order_by("headword")[:limit_grammar])]))
             elif search_type == 'starts_with':
                 result = [h.headword for h in list(Headword.objects.filter(headword__istartswith=query).order_by("headword")[:limit_headwords])]
-                result +=  list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__istartswith=query).order_by("inflected_form")[:limit_inflected])]))
+                result += list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__istartswith=query).order_by("inflected_form")[:limit_inflected])]))
+                result += list(set([w.headword for w in list(Deconstruction.objects.filter(headword__istartswith=query).order_by("headword")[:limit_deconstruction])]))
+                result += list(set([w.headword for w in list(Grammar.objects.filter(headword__istartswith=query).order_by("headword")[:limit_grammar])]))
             elif search_type == 'ends_with':
                 result = [h.headword for h in list(Headword.objects.filter(headword__iendswith=query).order_by("headword")[:limit_headwords])]
                 result += list(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iendswith=query).order_by("inflected_form")[:limit_inflected])]))
+                result += list(set([w.headword for w in list(Deconstruction.objects.filter(headword__iendswith=query).order_by("headword")[:limit_deconstruction])]))
+                result += list(set([w.headword for w in list(Grammar.objects.filter(headword__iendswith=query).order_by("headword")[:limit_grammar])]))
             return result
         return []
+
+
+
+
+def collect_headword_entries_descrs_from_table_headwords(headword : str = "") -> str:
+    result = ""
+    try:
+        hw : Headword = Headword.objects.get(pk=headword)
+    except Headword.DoesNotExist:
+        hw = None
+    if hw:
+        result += hw.desc_html
+    return result
+
+def collect_headword_entries_descrs_from_suplementary_tables(key_for_suplementary_tables : str = "") -> str:
+    result = ""
+    try:
+        gram : Grammar = Grammar.objects.get(pk=key_for_suplementary_tables)
+    except Grammar.DoesNotExist:
+        gram = None
+    if gram:
+        result += gram.desc_html
+    try:
+        dec : Deconstruction = Deconstruction.objects.get(pk=key_for_suplementary_tables)
+    except Deconstruction.DoesNotExist:
+        dec = None
+    if dec:
+        result += dec.desc_html
+    return result
 
 
 def lookup_word(request : HttpRequest, word):
@@ -87,19 +127,15 @@ def lookup_word(request : HttpRequest, word):
             hw : Headword = Headword.objects.get(pk=inflected_form.link_text)
             result += hw.desc_html
     else:
-        try:
-            hw : Headword = Headword.objects.get(pk=word)
-        except Headword.DoesNotExist:
-            hw = None
-        if hw:
-            result += hw.desc_html
-        else:
-            response = HttpResponse()
-            response.status_code = 404
-            return response
+        print("collecting from word directly")
+        result += collect_headword_entries_descrs_from_table_headwords(word)
+    result += collect_headword_entries_descrs_from_suplementary_tables(word)
+    if result == "":
+        response = HttpResponse()
+        response.status_code = 404
+        return response
 
     context = {
         'body': result,
     }
     return render(request, template, context)
-    #return HttpResponse(result)

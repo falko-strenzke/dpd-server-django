@@ -76,11 +76,11 @@ def clean_sqlite_db(conn : sqlite3.Connection) -> None:
     """
     Delete all existing words entries in the relevant tables in the data base
     """
-    sql = 'DELETE FROM dict_headword'
-    sql2 = 'DELETE FROM dict_inflected_form'
+    list_of_tables = ["dict_headword", "dict_inflected_form", "dict_deconstruction", "dict_grammar"]
     cur = conn.cursor()
-    cur.execute(sql)
-    cur.execute(sql2)
+    for table in list_of_tables:
+        sql = 'DELETE FROM ' + table
+        cur.execute(sql)
 
 
 def is_lookup_key_valid_for_sqlite_db(word : str) -> bool:
@@ -90,14 +90,14 @@ def is_lookup_key_valid_for_sqlite_db(word : str) -> bool:
     return False
 
 
-def write_new_headword_to_sqlite_db(conn : sqlite3.Connection, headword : str, desc_html : str):
+def write_new_headword_to_sqlite_db(conn : sqlite3.Connection, headword : str, desc_html : str, headword_table_name_wo_app_prefix : str):
     """
     Write a new headword to the data base
     """
-    if headword_exists_in_sqlite_db(conn, headword):
-        print('headword: "' + headword + '": duplicate entry, not writing it twice')
+    if headword_exists_in_sqlite_db(conn, headword, headword_table_name_wo_app_prefix):
+        print('headword: "' + headword + '": duplicate entry in table "' + headword_table_name_wo_app_prefix + '", not writing it twice')
         return
-    sql_words_entry = ''' INSERT INTO dict_headword(headword,desc_html) VALUES(?,?) '''
+    sql_words_entry = 'INSERT INTO dict_' + headword_table_name_wo_app_prefix + '(headword,desc_html) VALUES(?,?) '
     cur = conn.cursor()
     cur.execute(sql_words_entry, [headword, desc_html])
 
@@ -111,7 +111,7 @@ def write_new_inflected_form_to_sqlite_db(conn : sqlite3.Connection, word: str, 
     cur.execute(sql_words_entry, [word, link_text])
 
 
-def write_new_entry_to_sqlite_db(conn : sqlite3.Connection, word: str, entry: str) -> int:
+def write_new_entry_to_sqlite_db(conn : sqlite3.Connection, word: str, entry: str, headword_table_name_wo_app_prefix : str) -> int:
     """
     Write a new headword to the data base. Return 1 if a headword was written, otherwise 0.
     """
@@ -122,7 +122,7 @@ def write_new_entry_to_sqlite_db(conn : sqlite3.Connection, word: str, entry: st
         write_new_inflected_form_to_sqlite_db(conn, word, entry[8:])
         return 0
     else:
-        write_new_headword_to_sqlite_db(conn, word, entry)
+        write_new_headword_to_sqlite_db(conn, word, entry, headword_table_name_wo_app_prefix)
         return 1
 
 
@@ -145,7 +145,7 @@ def replace_text_mdict(entry : str, replace_text_for_mdict : str) -> str:
     return re.sub(r'MDict', replace_text_for_mdict, entry)
 
 
-def write_mdict_to_sqlite_db(conn : sqlite3.Connection, mdx, replace_text_for_mdict, limit : int):
+def write_mdict_to_sqlite_db(conn : sqlite3.Connection, mdx, replace_text_for_mdict, limit : int, headword_table_name_wo_app_prefix : str):
     """
     Write the whole contents of the MDict to the SQLite DB
     """
@@ -163,7 +163,7 @@ def write_mdict_to_sqlite_db(conn : sqlite3.Connection, mdx, replace_text_for_md
         else:
             if key_str == "" or key_str.isnumeric():
                 continue
-            cnt_hw += write_new_entry_to_sqlite_db(conn, key_str, value_str)
+            cnt_hw += write_new_entry_to_sqlite_db(conn, key_str, value_str, headword_table_name_wo_app_prefix)
             if limit > 0 and cnt_hw >= limit:
                 break
         printProgressBar(i, all_iters, prefix='Progress:', suffix='Complete' + last_filtered_out, length=50)
@@ -175,14 +175,22 @@ def write_mdict_to_sqlite_db(conn : sqlite3.Connection, mdx, replace_text_for_md
         #print("checked links, " + str(broken_links_cnt) + " are broken")
 
 
-def headword_exists_in_sqlite_db(conn : sqlite3.Connection, headword : str) -> bool:
+def headword_exists_in_sqlite_db(conn : sqlite3.Connection, headword : str, headword_table_name_wo_app_prefix : str) -> bool:
     cur = conn.cursor()
-    cur.execute("SELECT headword FROM dict_headword WHERE headword=?", (headword,))
+    cur.execute("SELECT headword FROM dict_" + headword_table_name_wo_app_prefix + " WHERE headword=?", (headword,))
     rows = cur.fetchall()
     if(len(rows) > 0):
         return True
     return False
 
+
+def is_headword_table_filled(conn : sqlite3.Connection, headword_table_name_wo_app_prefix : str) -> bool:
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM dict_" + headword_table_name_wo_app_prefix + " LIMIT 1")
+    rows = cur.fetchall()
+    if(len(rows) > 0):
+        return True
+    return False
 
 
 
@@ -771,6 +779,9 @@ if __name__ == '__main__':
 
     parser.add_argument('-b', '--sqlite-db-file', default="",
                         help='specify the sqlite database file to which to write the extracted entries instead of writing them to disc. Purely numeric keys (headwords) are filtered out with this option.')
+
+    parser.add_argument('-c', '--clean-db', action="store_true",
+                        help='relevant only if --sqlite-db-file was specified. In this case, delete all exisiting word entries before adding the new entries.')
     parser.add_argument('-l', '--headword-count-limit', default="",
                         help='specify a limit on the number of processed entries. applies to entries written to sqlite database as well as files written to desc with --file-per-entry')
     parser.add_argument('-r', '--replace-text-for-mdict', default="", help='applies only to the case of creating an sqlite3 database. Specifies the text used to replace the text for "MDict" which is part of the URL for the Google Forms for the purpose of reporting suggestions and errors. Overriding this string ensures for the indication of the source of the source the report applies to.')
@@ -856,9 +867,28 @@ if __name__ == '__main__':
 
 
             elif args.sqlite_db_file != "":
+                headword_table_name_wo_app_prefix = "headword"
+                is_deconstructor_dict = False
+                is_grammar_dict = False
+                print("db sqlite base name: " + args.sqlite_db_file)
+                if "deconstructor" in os.path.basename(args.filename):
+                    is_deconstructor_dict = True
+                    headword_table_name_wo_app_prefix = "deconstruction"
+                    print("treating input file as deconstructor dictionary")
+                if "grammar" in os.path.basename(args.filename):
+                    is_grammar_dict = True
+                    headword_table_name_wo_app_prefix = "grammar"
+                    print("treating input file as grammar dictionary")
+                if is_deconstructor_dict and is_grammar_dict:
+                    print("confusing file name indicating both deconstructor and grammar dict, aborting")
+                    sys.exit(1)
                 conn : sqlite3.Connection = create_sqlite_connection(args.sqlite_db_file)
-                clean_sqlite_db(conn)
-                write_mdict_to_sqlite_db(conn, mdx, args.replace_text_for_mdict, headword_count_limit)
+                if args.clean_db:
+                    clean_sqlite_db(conn)
+                if ((not is_deconstructor_dict) and (not is_grammar_dict)) and is_headword_table_filled(conn, "headword"):
+                    print("Headword object table already contains entries, new entries to be added are also supposed to go there, and cleaning the DB has not been selected: this would result in an inconsistent DB, aborting")
+                    sys.exit(1)
+                write_mdict_to_sqlite_db(conn, mdx, args.replace_text_for_mdict, headword_count_limit, headword_table_name_wo_app_prefix)
                 conn.commit()
             elif args.file_per_entry:
                 datafolder = os.path.join(os.path.dirname(args.filename), args.datafolder)
