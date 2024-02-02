@@ -1,4 +1,4 @@
-# Django-based word lookup and search in Digital Pali Dictionary
+# Django-based word lookup and search in Digital Pāḷi Dictionary
 
 * `cd dpdwebserver`
 * `python3 manage.py makemigrations dict`
@@ -8,21 +8,20 @@
   * Must provide the main DPD MDict file here.
   * Output will show progress bar and indicated some filtered out entries. May take a few minutes.
   * Afterwards, the `db.sqlite3` file will be about 2GB large.
-* optionally add the DPD grammar and deconstructor suplementary dictionaries:
+* Optionally add the DPD grammar and deconstructor supplementary dictionaries:
   * `python3 readmdict.py -b ../../../db.sqlite3 -x /path/to/dpd-grammar-mdict.mdx`
   * `python3 readmdict.py -b ../../../db.sqlite3 -x /path/to/dpd-deconstructor-mdict.mdx`
   * Now the resulting `db.sqlite3` file will be about 4.5 GB large.
-  * Note that the file names `dpd-grammar-mdict.mdx` and `dpd-deconstructor-mdict.mdx` are used to determine which type of suplementary dictionary is being processed based on the presence of the substrings "grammar" and "deconstructor".
+  * Note that the file names `dpd-grammar-mdict.mdx` and `dpd-deconstructor-mdict.mdx` are used to determine which type of supplementary dictionary is being processed based on the presence of the substrings "grammar" and "deconstructor".
   Thus do not change the file names.
 * `cd ../../../`
 * `python3 manage.py runserver`
 * Search page: `http://localhost:8000/dict/dpd/search`
   * Search by substring matches into both headwords and inflected forms, but the results displayed are only the (associated) headwords.
-  * Search may fail with error if too many results are returned.
   * No sensible ordering of results.
 * Lookup a word: `http://localhost:8000/dict/dpd/lookup/sati`
   * Word to lookup after ".../lookup/"
-  * Unicode characters can be entered directly into the URL
+  * Unicode characters can usually be entered directly into the URL
 
   
 ## Tools
@@ -38,5 +37,5 @@ Can be used to build from the MDict version of the DPD
     * the above command creates the file `dpd-word-list.txt`
     * in Vim run `:mkspell pi.utf-8.spl dpd-word-list.txt`
     * then place the file `pi.utf-8.spl` into `~/.vim/spell`
-    * and enable spell checking in Vim: `set spell spelllang=en,pi` to have both english and and Pāḷi words recognized
+    * and enable spell checking in Vim: `set spell spelllang=en,pi` to have both English and Pāḷi words recognized
     * caveats: neither vowel lengthening before *'ti* nor sandhis written with "'" which change of the first word's final consonant are recognized
