@@ -24,10 +24,12 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
     source_cur = source_conn.cursor()
     loop_cnt : int = 0
     for target_row in target_cur:
-        loop_cnt += 1
+        print(t.blue(f"starting loop with loop_cnt = {loop_cnt}"))
         if limit_cnt > 0 and loop_cnt > limit_cnt:
-            t.yellow(f"reached configured limit of {limit_cnt}, stopping.")
+            print(t.yellow(f"reached configured limit of {limit_cnt}, stopping."))
             break
+        else:
+            print(t.blue(f"limit of {limit_cnt} not yet reached"))
         headword : str = target_row[0]
         #print(f'"{headword}"')
         #if headword.find('"') != -1:
@@ -39,19 +41,40 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
             print(t.red("missing entry for headword '" + headword + "' in source_db"))
             continue
         if len(source_rows) > 1:
-            print(t.red("found multiple (" + str(len(source_rows)) + ") entries for headword '" + headword + "' in source_db"))
-        construction_elements_line = source_rows[0]
+            print(t.red("found multiple (" + str(len(source_rows)) + ") entries for headword '" + headword + "' in source_db, aborting"))
+            sys.exit(1)
+        loop_cnt += 1
+        construction_elements_line = source_rows[0][0]
+        print(construction_elements_line)
+        if construction_elements_line == "":
+            continue
+        # ignore everything beyond the first line
+        constructions_elements_line_splitted = construction_elements_line.split('\n')
+        construction_elements_line = constructions_elements_line_splitted[0]
         constr_elems = construction_elements_line.split("+")
         root_found = False
         prefix_ctr = 1
         suffix_ctr = -1
 
         class ElemData:
+
+            def full_element_text_to_original_token_and_phonetic_change(self, text : str) -> tuple[str, str]:
+                tokens = text.split(">")
+                if len(tokens) > 1:
+                    return (tokens[0], text)
+                return (text, "")
+
             def __init__(self, headword, text, prefix_ctr, suffix_ctr):
+                original_token__phonetic_change = self.full_element_text_to_original_token_and_phonetic_change(text)
                 self.headword = headword
-                self.text = text
+                self.text = original_token__phonetic_change[0]
+                self.phonetic_change = original_token__phonetic_change[1]
                 self.prefix_ctr = prefix_ctr
                 self.suffix_ctr = suffix_ctr
+
+            def has_phonetic_change(self) -> bool:
+                return self.phonetic_change != ""
+
         elem_data_list : list[ElemData] = []
         prefix_ctr_before_root : Optional[int] = None
         for elem in constr_elems:
@@ -63,7 +86,7 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
                 prefix_ctr_before_root = prefix_ctr
                 prefix_ctr = 0
                 root_found = True
-            data = ElemData(headword, elem.trim(), prefix_ctr, suffix_ctr)
+            data = ElemData(headword, elem.strip(), prefix_ctr, suffix_ctr)
             elem_data_list.append(data)
             if not root_found:
                 prefix_ctr += 1
@@ -72,12 +95,22 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
         if not root_found:
             # if no root was found, need create the counting of the suffixes from rear:
             suffix_ctr = 1
-            for i in reversed(range(0, len(elem_data_list) - 1)):
-                elem_data_list[i].suffix_ctr = suffix_ctr
+            for i in reversed(range(0, len(elem_data_list))):
+                data = elem_data_list[i]
+                data.suffix_ctr = suffix_ctr
+                print(t.blue(f"{data.headword}: assigned suffix_ctr = {suffix_ctr} to element number {i}"))
                 suffix_ctr += 1
         # write the data elements into the DB:
         for data in elem_data_list:
-            target_conn.execute("INSERT INTO dict_construction_element (headword, text, prefix_pos, suffix_pos) VALUES (?, ?, ?, ?)", (data.headword, data.text, data.prefix_ctr, data.suffix_ctr,))
+            print(t.blue("going to insert regular element into db"))
+            target_conn.execute("INSERT INTO dict_construction_element (headword_id, text, prefix_pos, suffix_pos, is_phonetic_change) VALUES (?, ?, ?, ?, ?)", (data.headword, data.text, data.prefix_ctr, data.suffix_ctr, False,))
+            if data.has_phonetic_change():
+                # set an additional entry for the phonetic change
+                print(t.blue("going to insert phonetic_change into db"))
+                target_conn.execute("INSERT INTO dict_construction_element (headword_id, text, prefix_pos, suffix_pos, is_phonetic_change) VALUES (?, ?, ?, ?, ?)", (data.headword, data.phonetic_change, data.prefix_ctr, data.suffix_ctr, True))
+        target_conn.execute("UPDATE dict_headword SET construction_text = ? WHERE headword=?", (construction_elements_line, headword,) )
+        print(t.blue(f"update for headword {headword} complete"))
+    print(t.blue("committing the changes to db"))
     target_conn.commit()
 
 
@@ -113,14 +146,14 @@ def configure(ctx, param, filename):
 def main(target_db : str, source_db : str, limit : int):
     term = Terminal()
     if source_db is None or source_db == "":
-       term.red("must provide configuration option for source-db") 
+       term.red("must provide configuration option for source-db")
        exit(1)
     if target_db is None or source_db == "":
-       term.red("must provide configuration option for target-db") 
+       term.red("must provide configuration option for target-db")
        exit(1)
     source_conn : sqlite3.Connection = sqlite3.connect(source_db)
     target_conn : sqlite3.Connection = sqlite3.connect(target_db)
-    update_all_construction(source_conn=source_conn, target_conn=target_conn)
+    update_all_construction(source_conn=source_conn, target_conn=target_conn, limit_cnt=limit)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,10 @@ class Headword(models.Model):
 
     headword = models.CharField(max_length=255, unique=True, primary_key=True)
     desc_html = models.TextField()
+
+    """
+    construction without phonetic change information
+    """
     construction_text = models.TextField(default="")
 
 
@@ -28,6 +32,7 @@ class Construction_Element(models.Model):
     text = models.CharField(max_length=255)
     prefix_pos = models.IntegerField()
     suffix_pos = models.IntegerField()
+    is_phonetic_change = models.BooleanField(default=False)
 
 
 class Inflected_Form(models.Model):

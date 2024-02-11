@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpRequest
 from django.views.generic import ListView
 import markdown
 #from django.db.models.query import QuerySet
-from .models import Inflected_Form, Headword, Deconstruction, Grammar
+from .models import Inflected_Form, Headword, Deconstruction, Grammar, Construction_Element
 
 
 def render_markdown_file(request : HttpRequest):
@@ -49,6 +49,25 @@ class SearchEntriesOfDictView(ListView):
 
         return context
 
+    def search_headwords_by_construction(self) -> list[str]:
+        limit = 1000
+        # TODO: filter out queries where whitespace or other invalid chars is enclosed by "+" signs
+        query = self.request.GET.get("q")
+        # parse the query into tokens separated by "+"
+        query_plus_sep_toks = query.split('+')
+        print("query_plus_sep_toks = " + str(query_plus_sep_toks))
+        query_plus_sep_toks = [x.strip() for x in query_plus_sep_toks]
+        if len(query_plus_sep_toks) == 0:
+            return []
+        search = Headword.objects.filter(construction_element__text__iexact=query_plus_sep_toks[0])
+        query_plus_sep_toks = query_plus_sep_toks[1:]
+        # Blog.objects.filter(entry__headline__contains="Lennon")
+        for query_tok in query_plus_sep_toks:
+            search = search.filter(construction_element__text__iexact=query_tok)
+        result_set = {w.headword for w in list(search)[:limit]}
+        return list(result_set)
+
+
     def get_queryset(self): # new
         query = self.request.GET.get("q")
         search_type = self.request.GET.get("search_type")
@@ -82,6 +101,8 @@ class SearchEntriesOfDictView(ListView):
                 set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iendswith=query).order_by("inflected_form")[:limit_inflected])]))
                 set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iendswith=query).order_by("headword")[:limit_deconstruction])]))
                 set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__iendswith=query).order_by("headword")[:limit_grammar])]))
+            elif search_type == 'by_construction':
+                return self.search_headwords_by_construction()
             result = list(set_of_search_results)
             return result
         return []
