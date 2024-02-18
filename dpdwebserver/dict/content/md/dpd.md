@@ -6,7 +6,8 @@ This website features an online version of the [Digital Pāḷi Dictionary (DPD)
 through its structured nature that allows reliable lookups of inflected forms, compounds and sandhis. It furthermore has an extensive reliance on the Pāḷi texts itself in that all proclaimed words and forms are matched to their occurrences
 in the text. In this way, its degree of completion is measurable and the existence of the proclaimed inflections, etc. is verifiable. The DPD is originally available for GoldenDict and MDict applications and thus can be conveniently used on desktop computers as well as on smart phones.
 
-This page gives users the additional opportunity to use the DPD through a web browser. It also adds to the search functionality compared GoldenDict of MDict as it enables sub string searches.
+This page gives users the additional opportunity to use the DPD through a web browser, including the DPD-deconstructor and DPD-grammar supplementary dictionaries.
+It also adds to the search functionality compared GoldenDict or MDict as it enables sub string search and (still in an experimental stage) search based on the word construction.
 
 As the DPD represents a Pāḷi-English dictionary and simultaneously an English-Pāḷi dictionary, so does this online version of the DPD.
 
@@ -16,7 +17,6 @@ simply has to be placed at the end of the URL.
 
 However, the current version of the online DPD has some restrictions:
 
-- It features the main DPD dictionary and also the DPD-deconstructor and DPD-grammar supplementary dictionaries.
 - The lookup URL could in principle be used to integrate our Digital Pāḷi Dictionary online into a website-based dictionary in GoldenDict. However, probably due to certain shortcomings in the HTML delivered by our server GoldenDict refuses
 to render the entries unless there is displayed another entry after it.
 - The search functionality is still far from perfect as it limits the results to a few hundred findings without pagination.
