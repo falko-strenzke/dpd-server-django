@@ -24,8 +24,10 @@ class UrlInfo:
 
 
 def nav_bar_context(request):
+    # the first argument, 'url_name' refers to the name given in urls.py
     return {'navbar_items': [
         UrlInfo('dpd_page', 'Digital Pāḷi Dictionary', request),
         UrlInfo('search_entries_of_dict', 'Search the DPD', request),
+        UrlInfo('search_by_construction', 'Search by Construction', request),
     ]
     }

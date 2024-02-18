@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpRequest
 from django.views.generic import ListView
 import markdown
 #from django.db.models.query import QuerySet
-from .models import Inflected_Form, Headword, Deconstruction, Grammar, Construction_Element
+from .models import Inflected_Form, Headword, Deconstruction, Grammar, Construction_Element, Construction_Element_Set
 
 
 def render_markdown_file(request : HttpRequest):
@@ -25,6 +25,64 @@ def render_markdown_file(request : HttpRequest):
         'content': markdown.markdown(data, extensions=['tables']),
     }
     return render(request, 'md_content.html', context)
+
+
+class SearchByConsructionView(ListView):
+    """Search view for the entries of a specific dictionary"""
+    #from https://learndjango.com/tutorials/django-search-tutorial
+    # as an alternative function-based view check out
+    # https://linuxhint.com/build-a-basic-search-for-a-django/
+    model = Inflected_Form
+    template_name = "search_construction.html"
+
+    def get_context_data(self, **kwargs):
+
+        query = self.request.GET.get("q")
+        context = super(ListView, self).get_context_data(**kwargs)
+        context['query_string_with_label'] = "search query: " + query + "\n" if query not in [None, ''] else ''
+        context['query_string'] = query if query not in [None, ''] else ''
+        search_type = self.request.GET.get("search_type")
+        if search_type == "":
+            search_type = "exact"
+        context['autocomplete_list'] = [x.text for x in list(Construction_Element_Set.objects.all())]
+        return context
+
+    def search_headwords_by_construction(self) -> list[str]:
+        class HeadwordInfo:
+            def __init__(self, headword_link, construction_text):
+                self.headword_link = headword_link
+                self.construction_text = construction_text
+        limit = 1000
+        # TODO: filter out queries where whitespace or other invalid chars is enclosed by separator char(s)
+        query = self.request.GET.get("q")
+        # parse the query into tokens separated by "+"
+        query = query.strip() # strip of leading or trailing spaces
+        query = query.strip(",")
+        query_plus_sep_toks = query.split(',')
+        print("query_plus_sep_toks = " + str(query_plus_sep_toks))
+        query_plus_sep_toks = [x.strip() for x in query_plus_sep_toks]
+        if len(query_plus_sep_toks) == 0:
+            return []
+        search = Headword.objects.filter(construction_element__text__iexact=query_plus_sep_toks[0])
+        query_plus_sep_toks = query_plus_sep_toks[1:]
+        # Blog.objects.filter(entry__headline__contains="Lennon")
+        result : list[HeadwordInfo] = []
+        for query_tok in query_plus_sep_toks:
+            search = search.filter(construction_element__text__iexact=query_tok)
+        result_set_headwords = {w.headword for w in list(search)[:limit]}
+        for hw in result_set_headwords:
+            print("appending result for headword: '" + hw + "'")
+            result.append(HeadwordInfo(hw, Headword.objects.get(headword=hw).construction_text))
+        return result
+
+
+    def get_queryset(self): # new
+        query = self.request.GET.get("q")
+        search_type = self.request.GET.get("search_type")
+        print(search_type)
+        if query is not None:
+            return self.search_headwords_by_construction()
+        return []
 
 
 class SearchEntriesOfDictView(ListView):
@@ -46,26 +104,8 @@ class SearchEntriesOfDictView(ListView):
             search_type = "exact"
         context['search_type'] = search_type
 
-
         return context
 
-    def search_headwords_by_construction(self) -> list[str]:
-        limit = 1000
-        # TODO: filter out queries where whitespace or other invalid chars is enclosed by "+" signs
-        query = self.request.GET.get("q")
-        # parse the query into tokens separated by "+"
-        query_plus_sep_toks = query.split('+')
-        print("query_plus_sep_toks = " + str(query_plus_sep_toks))
-        query_plus_sep_toks = [x.strip() for x in query_plus_sep_toks]
-        if len(query_plus_sep_toks) == 0:
-            return []
-        search = Headword.objects.filter(construction_element__text__iexact=query_plus_sep_toks[0])
-        query_plus_sep_toks = query_plus_sep_toks[1:]
-        # Blog.objects.filter(entry__headline__contains="Lennon")
-        for query_tok in query_plus_sep_toks:
-            search = search.filter(construction_element__text__iexact=query_tok)
-        result_set = {w.headword for w in list(search)[:limit]}
-        return list(result_set)
 
 
     def get_queryset(self): # new
@@ -77,11 +117,12 @@ class SearchEntriesOfDictView(ListView):
         limit_deconstruction = 300
         limit_grammar = 300
         set_of_search_results : set[str] = set()
-        # TODO: MAKES NO SENSE TO SHOW EACH KEY ("HEADWORD") MULTIPLE TIMES IF IT IS FOUND IN MULTIPLE TABLES FROM THE SET "headword", "deconstruction", and "grammar".
+        # DONE?: TODO: MAKES NO SENSE TO SHOW EACH KEY ("HEADWORD") MULTIPLE TIMES IF IT IS FOUND IN MULTIPLE TABLES FROM THE SET "headword", "deconstruction", and "grammar".
         #       Better show in brackets which types of entries are present for this key.
         if query is not None:
             result : list[str] = []
             if search_type == 'exact':
+                # TODO: SENSE LIST COMPREHENSION:
                 [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__iexact=query).order_by("headword")[:limit_headwords])]
                 set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iexact=query).order_by("inflected_form")[:limit_inflected])]))
                 set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iexact=query).order_by("headword")[:limit_deconstruction])]))
@@ -101,8 +142,8 @@ class SearchEntriesOfDictView(ListView):
                 set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iendswith=query).order_by("inflected_form")[:limit_inflected])]))
                 set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iendswith=query).order_by("headword")[:limit_deconstruction])]))
                 set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__iendswith=query).order_by("headword")[:limit_grammar])]))
-            elif search_type == 'by_construction':
-                return self.search_headwords_by_construction()
+            #elif search_type == 'by_construction':
+            #    return self.search_headwords_by_construction()
             result = list(set_of_search_results)
             return result
         return []
@@ -119,6 +160,7 @@ def collect_headword_entries_descrs_from_table_headwords(headword : str = "") ->
     if hw:
         result += hw.desc_html
     return result
+
 
 def collect_headword_entries_descrs_from_supplementary_tables(key_for_supplementary_tables : str = "") -> str:
     result = ""

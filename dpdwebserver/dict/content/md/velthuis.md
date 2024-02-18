@@ -20,6 +20,6 @@ Pāḷi / special | your input
 
   
   
-Note that the extended Velthuis transliteration does not apply to the lookup URL.
+Note that the extended Velthuis transliteration does not apply to the lookup URL. The lookup URL must contain the Unicode characters themselves.
 
 The √ symbol is useful to restrict the search to roots. Simply entering "√" into the search bar will return (mostly) only entries for the roots dictionary contained in the DPD.

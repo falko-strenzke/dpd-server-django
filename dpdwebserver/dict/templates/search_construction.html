@@ -1,0 +1,126 @@
+<!-- templates/search_results.html -->
+{% extends "base.html" %}
+{% block page_content %}
+<div class="col-md-8 offset-md-2">
+  <h1>Search headwords by construction</h1>
+  See <a href="{% url 'construction_search_instructions_page' %}">here</a> for instructions.
+  <hr>
+  <form action="" method="get">
+    <div class="row">
+      <div class="form-group">
+        <!-- https://tarekraafat.github.io/autoComplete.js/#/usage -->
+        <!-- <div class="autoComplete_wrapper">  -->
+          <input id="autoComplete" name="q" type="search" dir="ltr" spellcheck=false autocorrect="off" autocomplete="off" autocapitalize="off" placeholder="Search..." value="{{ query_string }}" onkeyup="replaceChars()" >
+          <!-- </div> -->
+          <input type="submit" value="Submit">
+      </div>
+    </div>
+
+  </form>
+
+  <div>
+    <input type="checkbox" id="check_velthuis" name="check_velthuis" checked />
+    <label for="check_velthuis">Use <a href="{% url 'velthuis_page' %}">Velthuis character substitution</a></label>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
+<script>
+function replaceChars() {
+
+  use_velthuis = $("#check_velthuis").is(":checked");
+  if (!use_velthuis) {
+    return
+  }
+
+  let str = document.getElementById("autoComplete").value;
+  let res = str.replace(/A/g, "ā");
+  res = res.replace(/U/g, "ū");
+  res = res.replace(/I/g, "ī");
+  res = res.replace(/~n/g, "ñ");
+  res = res.replace(/\.n/g, "ṇ");
+  res = res.replace(/:n/g, "ṅ");
+  res = res.replace(/\.m/g, "ṃ");
+  res = res.replace(/\.l/g, "ḷ");
+  res = res.replace(/\.r/g, "ṛ");
+  res = res.replace(/\.t/g, "ṭ");
+  res = res.replace(/\.d/g, "ḍ");
+  res = res.replace(/:r/g, "√");
+  console.log(res)
+  document.getElementById("autoComplete").value = res;
+}
+
+
+const autoCompleteJS = new autoComplete({
+            placeHolder: "Search for construction...",
+            data: {
+                src: [
+      {% for entry in autocomplete_list %}
+       "{{ entry }}",
+      {% endfor %}
+                ],
+                cache: true,
+            },
+            resultItem: {
+                highlight: true
+            },
+            diacritics: true,
+            // autoComplete.js Config Options
+            query: (query) => {
+                // Split query into array
+                const querySplit = query.split(",");
+                // Get last query value index
+                const lastQuery = querySplit.length - 1;
+                // Trim new query
+                const newQuery = querySplit[lastQuery].trim();
+
+                return newQuery;
+            },
+            events: {
+                input: {
+                    selection(event) {
+                        const feedback = event.detail;
+                        const input = autoCompleteJS.input;
+                        // Trim selected Value
+                        const selection = feedback.selection.value.trim();
+                        // Split query into array and trim each value
+                        const query = input.value.split(",").map(item => item.trim());
+                        // Remove last query
+                        query.pop();
+                        // Add selected value
+                        query.push(selection);
+                        // Replace Input value with the new query
+                        input.value = query.join(", ") + ", ";
+                    }
+                }
+            },
+                    });
+
+</script>
+
+
+
+  <hr>
+  {{ query_string_with_label|linebreaks }}
+  <ul>
+    <table class="table">
+      <thead>
+        <tr>
+          <th> results </th>
+        </tr>
+      </thead>
+      {% for entry in object_list %}
+      <tr>
+        <td> {{ entry.construction_text }} </td>
+        <td> <a href="{% url 'lookup_word' entry.headword_link %}"> {{ entry.headword_link }} </a> </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </ul>
+
+</div>
+
+
+{% endblock %}
+
+<!-- https://stackoverflow.com/questions/68566171/how-to-replace-characters-while-writing-in-a-form -->
+

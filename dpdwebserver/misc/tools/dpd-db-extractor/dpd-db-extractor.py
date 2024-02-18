@@ -20,8 +20,10 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
     t.green("updating construction elements")
     target_cur = target_conn.cursor()
     target_cur.execute("DELETE from dict_construction_element")
+    target_cur.execute("DELETE from dict_construction_element_set")
     target_cur.execute("SELECT headword FROM dict_headword")
     source_cur = source_conn.cursor()
+    constr_elem_set : set[str] = set()
     loop_cnt : int = 0
     for target_row in target_cur:
         print(t.blue(f"starting loop with loop_cnt = {loop_cnt}"))
@@ -35,7 +37,7 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
         #if headword.find('"') != -1:
         #    t.yellow("skipping this entry")
         #    continue
-        source_cur.execute("SELECT construction FROM pali_words WHERE pali_1=?", (headword,))
+        source_cur.execute("SELECT construction, compound_type, grammar FROM pali_words WHERE pali_1=?", (headword,))
         source_rows = source_cur.fetchall()
         if len(source_rows) == 0:
             print(t.red("missing entry for headword '" + headword + "' in source_db"))
@@ -45,6 +47,9 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
             sys.exit(1)
         loop_cnt += 1
         construction_elements_line = source_rows[0][0]
+        compound_type = source_rows[0][1]
+        grammar : str = source_rows[0][2]
+        is_compound = True if compound_type != "" or grammar.find("comp") != -1 else False
         print(construction_elements_line)
         if construction_elements_line == "":
             continue
@@ -78,6 +83,7 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
         elem_data_list : list[ElemData] = []
         prefix_ctr_before_root : Optional[int] = None
         for elem in constr_elems:
+            elem = elem.strip()
             if prefix_ctr == 0:
                 # previous element was a root
                 prefix_ctr = -1
@@ -86,7 +92,9 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
                 prefix_ctr_before_root = prefix_ctr
                 prefix_ctr = 0
                 root_found = True
-            data = ElemData(headword, elem.strip(), prefix_ctr, suffix_ctr)
+            data = ElemData(headword, elem, prefix_ctr, suffix_ctr)
+            if not is_compound:
+                constr_elem_set.add(data.text)
             elem_data_list.append(data)
             if not root_found:
                 prefix_ctr += 1
@@ -111,6 +119,11 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
         target_conn.execute("UPDATE dict_headword SET construction_text = ? WHERE headword=?", (construction_elements_line, headword,) )
         print(t.blue(f"update for headword {headword} complete"))
     print(t.blue("committing the changes to db"))
+    for constr_elem_in_set in constr_elem_set:
+        max_len = 255
+        if not constr_elem_in_set.startswith("√") and len(constr_elem_in_set) > max_len:
+            continue
+        target_conn.execute("INSERT INTO dict_construction_element_set (text) VALUES (?)", (constr_elem_in_set,))
     target_conn.commit()
 
 

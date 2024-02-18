@@ -60,3 +60,10 @@ class Grammar(models.Model):
 
     headword = models.CharField(max_length=255, unique=True, primary_key=True)
     desc_html = models.CharField(max_length=255)
+
+
+class Construction_Element_Set(models.Model):
+    """
+    This table contains the set of all construction elements found in the construction of any headword. It is thus for instance suitable for providing auto completion for the search by construction.
+    """
+    text = models.CharField(max_length=255)
