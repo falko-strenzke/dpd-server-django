@@ -109,20 +109,18 @@ class SearchEntriesOfDictView(ListView):
 
 
     def get_queryset(self): # new
-        query = self.request.GET.get("q")
+        query : str = self.request.GET.get("q")
         search_type = self.request.GET.get("search_type")
-        print(search_type)
         limit_headwords = 300
         limit_inflected = 300
         limit_deconstruction = 300
         limit_grammar = 300
         set_of_search_results : set[str] = set()
-        # DONE?: TODO: MAKES NO SENSE TO SHOW EACH KEY ("HEADWORD") MULTIPLE TIMES IF IT IS FOUND IN MULTIPLE TABLES FROM THE SET "headword", "deconstruction", and "grammar".
-        #       Better show in brackets which types of entries are present for this key.
         if query is not None:
+            query = query.strip()
             result : list[str] = []
             if search_type == 'exact':
-                # TODO: SENSE LIST COMPREHENSION:
+                # TODO: SENSELESS SET COMPREHENSION (?):
                 [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__iexact=query).order_by("headword")[:limit_headwords])]
                 set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iexact=query).order_by("inflected_form")[:limit_inflected])]))
                 set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iexact=query).order_by("headword")[:limit_deconstruction])]))
@@ -142,8 +140,6 @@ class SearchEntriesOfDictView(ListView):
                 set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iendswith=query).order_by("inflected_form")[:limit_inflected])]))
                 set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iendswith=query).order_by("headword")[:limit_deconstruction])]))
                 set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__iendswith=query).order_by("headword")[:limit_grammar])]))
-            #elif search_type == 'by_construction':
-            #    return self.search_headwords_by_construction()
             result = list(set_of_search_results)
             return result
         return []
