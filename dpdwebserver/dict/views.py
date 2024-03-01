@@ -19,7 +19,7 @@ def render_markdown_file(request : HttpRequest):
     base_name = os.path.basename(req_path)
     module_dir = os.path.dirname(__file__)
     file_path = os.path.join(module_dir, f"content/md/{base_name}.md")
-    data_file = open(file_path, 'r')
+    data_file = open(file_path, 'r', encoding="utf-8")
     data = data_file.read()
     context = {
         'content': markdown.markdown(data, extensions=['tables']),
@@ -179,12 +179,13 @@ def collect_headword_entries_descrs_from_supplementary_tables(key_for_supplement
     return result
 
 
-def lookup_word(request : HttpRequest, word):
+def lookup_word(request : HttpRequest, word : str):
     """Lookup a word in the dictionary dictionary"""
     #print(request.get_full_path())
     template = "lookup_word.html"
     if request.get_full_path().startswith('/dict/dpd/lookup_gd/word/'):
         template = "lookup_word_gd.html"
+    word = word.replace("ṁ", "ṃ")
     inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form=word))
     result = ""
     if len(inflected_forms) > 0:
