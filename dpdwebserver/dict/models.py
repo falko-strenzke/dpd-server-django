@@ -30,6 +30,9 @@ class Pali_Word(models.Model):
     stem = models.CharField(max_length=255)
     pattern = models.CharField(max_length=255)
 
+    def simple_text_with_pali(self):
+        return self.pali_1 + " – " + self.meaning_1
+
 
 class Pali_Root(models.Model):
     """
@@ -102,7 +105,7 @@ class Construction_Element_Set(models.Model):
 
 
 
-class Shandhi(models.Model):
+class Sandhi(models.Model):
     """
     For each inflected form give a comma separated list of known sandhi splits to which the form can be resolved
     """

@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpRequest
 from django.views.generic import ListView
 import markdown
 #from django.db.models.query import QuerySet
-from .models import Pali_Word, Pali_Root, Inflection_To_Headwords, Shandhi, Construction_Element, Construction_Element_Set
+from .models import Pali_Word, Pali_Root, Inflection_To_Headwords, Sandhi, Construction_Element, Construction_Element_Set
 
 
 def render_markdown_file(request : HttpRequest):
@@ -107,37 +107,48 @@ class SearchEntriesOfDictView(ListView):
         return context
 
 
-    def search_table_generically(self, query : str, match_suffix_wo__ : str, set_of_search_results : set[str], object_class: type[Pali_Word | Pali_Root | Inflection_To_Headwords], column_to_add : str, column_to_filter : str, limit : int) -> list[str]:
-        [set_of_search_results.add(getattr(h, column_to_add)) for h in list(object_class.objects.filter(**{f'{column_to_filter}__{match_suffix_wo__}': query}).order_by(column_to_filter)[:limit])]
+    def search_tables_generically(self, query : str, match_suffix_wo__ : str, set_of_search_results : set[str]) -> list[str]:
+
+        limit_headwords = 300
+        limit_inflected = 300
+        limit_sandhi = 300
+        #limit_grammar = 300
+
+        # get the matching headwords
+        [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(**{f'pali_2__{match_suffix_wo__}': query}).order_by("pali_1")[:limit_headwords])]
+
+        # get all the headwords to the inflected forms that match the query
+        # TODO: BETTER LIST THE INFLECTED FORM AND ITS GRAM. INSTANCE
+        #hw_list_from_inflected : list[str] = []
+        #[hw_list_from_inflected.extend(h.headwords.split(",")) for h in list(Inflection_To_Headwords.objects.filter(**{f'inflection__{match_suffix_wo__}': query}).order_by("inflection")[:limit_inflected])]
+        #hw_list_from_inflected = [x.strip() for x in hw_list_from_inflected]
+        [set_of_search_results.add(h.inflection) for h in list(Inflection_To_Headwords.objects.filter(**{f'inflection__{match_suffix_wo__}': query}).order_by("inflection")[:limit_inflected])]
+
+        # get the sandhi matches
+        [set_of_search_results.add(h.sandhi) for h in list(Sandhi.objects.filter(**{f'sandhi__{match_suffix_wo__}': query}).order_by("sandhi")[:limit_sandhi])]
 
 
     def get_queryset(self): # new
         query : str = self.request.GET.get("q")
         search_type = self.request.GET.get("search_type")
-        limit_headwords = 300
-        #limit_inflected = 300
-        #limit_deconstruction = 300
-        #limit_grammar = 300
         set_of_search_results : set[str] = set()
         if query is not None:
             query = query.strip()
             result : list[str] = []
-
+            match_suffix_wo__ : str = ""
             if search_type == 'exact':
-                # TODO: ADD Sandhi 
-                self.search_table_generically(query, "iexact", set_of_search_results, Pali_Word, "pali_1", "pali_2", limit_headwords)
+                match_suffix_wo__ = "iexact"
+                # TODO: ADD Sandhi
                 #[set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__iexact=query).order_by("pali_1")[:limit_headwords])]
                 #set_of_search_results.update(set([w.inflected_form for w in list(Inflection_To_Headwords.objects.filter(inflected_form__iexact=query).order_by("inflection")[:limit_inflected])]))
-                #TODO: SPLIT INFLECTED FORM REFS BY COMMA
                 #set_of_search_results.update(set([w.inflected_form for w in list(Inflection_To_Headwords.objects.filter(inflected_form__iexact=query).order_by("inflection")[:limit_inflected])]))
             elif search_type == 'substring_match':
-                [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__icontains=query).order_by("pali_1")[:limit_headwords])]
-                #TODO: SPLIT INFLECTED FORM REFS BY COMMA
-                #set_of_search_results.update(set([w.inflected_form for w in list(Inflection_To_Headwords.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])]))
+                match_suffix_wo__ = "icontains"
             elif search_type == 'starts_with':
-                [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__istartswith=query).order_by("pali_1")[:limit_headwords])]
+                match_suffix_wo__ = "istartswith"
             elif search_type == 'ends_with':
-                [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__iendswith=query).order_by("pali_1")[:limit_headwords])]
+                match_suffix_wo__ = "iendswith"
+            self.search_tables_generically(query, match_suffix_wo__, set_of_search_results )
             result = list(set_of_search_results)
             return result
         return []
@@ -152,27 +163,25 @@ def collect_headword_entries_descrs_from_table_headwords(headword : str = "") ->
     except Pali_Word.DoesNotExist:
         hw = None
     if hw:
-        result += hw.meaning_1
+        result += hw.simple_text_with_pali() + "<br>"
     return result
 
 
-"""
-def collect_headword_entries_descrs_from_supplementary_tables(key_for_supplementary_tables : str = "") -> str:
+def collect_inflected_form_results(word : str) -> str:
+    result : str = ""
+    hw_list_from_inflected : list[str] = []
+    [hw_list_from_inflected.extend(h.headwords.split(",")) for h in list(Inflection_To_Headwords.objects.filter(inflection__iexact=word).order_by("inflection"))]
+    for headword in hw_list_from_inflected:
+        result += Pali_Word.objects.get(pali_1=headword).simple_text_with_pali() + "<br>"
+    return result
+
+
+def collect_sandhi_results(word : str) -> str:
+    sandhis = Sandhi.objects.filter(sandhi=word)
     result = ""
-    try:
-        gram : Grammar = Grammar.objects.get(pk=key_for_supplementary_tables)
-    except Grammar.DoesNotExist:
-        gram = None
-    if gram:
-        result += gram.desc_html
-    try:
-        dec : Deconstruction = Deconstruction.objects.get(pk=key_for_supplementary_tables)
-    except Deconstruction.DoesNotExist:
-        dec = None
-    if dec:
-        result += dec.desc_html
+    for sandhi in sandhis:
+        result += "sandhi: " + ": " + sandhi.split + "<br>"
     return result
-"""
 
 
 def lookup_word(request : HttpRequest, word : str):
@@ -182,9 +191,9 @@ def lookup_word(request : HttpRequest, word : str):
     if request.get_full_path().startswith('/dict/dpd/lookup_gd/word/'):
         template = "lookup_word_gd.html"
     word = word.replace("ṁ", "ṃ")
-    # TODO: ADD INFLECTED FORM IN OUTPUT
+    # TODO: ADD INFLECTED FORMS IN OUTPUT
     #inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form=word))
-    result = ""
+    result = "<strong>" + word + "</strong><br>"
     #if len(inflected_forms) > 0:
     #    for inflected_form in inflected_forms:
     #        hw : Headword = Headword.objects.get(pk=inflected_form.link_text)
@@ -194,7 +203,8 @@ def lookup_word(request : HttpRequest, word : str):
     else:
         print("collecting from word directly")
         result += collect_headword_entries_descrs_from_table_headwords(word)
-    # TODO: enable collecting suplementary results
+    result += collect_sandhi_results(word)
+    result += collect_inflected_form_results(word)
     #result += collect_headword_entries_descrs_from_supplementary_tables(word)
     if result == "":
         response = HttpResponse()
