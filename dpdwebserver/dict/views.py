@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpRequest
 from django.views.generic import ListView
 import markdown
 #from django.db.models.query import QuerySet
-from .models import Inflected_Form, Headword, Deconstruction, Grammar, Construction_Element, Construction_Element_Set
+from .models import Pali_Word, Pali_Root, Inflection_To_Headwords, Shandhi, Construction_Element, Construction_Element_Set
 
 
 def render_markdown_file(request : HttpRequest):
@@ -32,7 +32,7 @@ class SearchByConsructionView(ListView):
     #from https://learndjango.com/tutorials/django-search-tutorial
     # as an alternative function-based view check out
     # https://linuxhint.com/build-a-basic-search-for-a-django/
-    model = Inflected_Form
+    #model = Inflected_Form
     template_name = "search_construction.html"
 
     def get_context_data(self, **kwargs):
@@ -63,16 +63,16 @@ class SearchByConsructionView(ListView):
         query_plus_sep_toks = [x.strip() for x in query_plus_sep_toks]
         if len(query_plus_sep_toks) == 0:
             return []
-        search = Headword.objects.filter(construction_element__text__iexact=query_plus_sep_toks[0])
+        search = Pali_Word.objects.filter(construction_element__text__iexact=query_plus_sep_toks[0])
         query_plus_sep_toks = query_plus_sep_toks[1:]
         # Blog.objects.filter(entry__headline__contains="Lennon")
         result : list[HeadwordInfo] = []
         for query_tok in query_plus_sep_toks:
             search = search.filter(construction_element__text__iexact=query_tok)
-        result_set_headwords = {w.headword for w in list(search)[:limit]}
+        result_set_headwords = {w.pali_1 for w in list(search)[:limit]}
         for hw in result_set_headwords:
             print("appending result for headword: '" + hw + "'")
-            result.append(HeadwordInfo(hw, Headword.objects.get(headword=hw).construction_text))
+            result.append(HeadwordInfo(hw, Pali_Word.objects.get(pali_1=hw).construction))
         return result
 
 
@@ -90,7 +90,7 @@ class SearchEntriesOfDictView(ListView):
     #from https://learndjango.com/tutorials/django-search-tutorial
     # as an alternative function-based view check out
     # https://linuxhint.com/build-a-basic-search-for-a-django/
-    model = Inflected_Form
+    #model = Inflected_Form
     template_name = "search_entries_of_dict.html"
 
     def get_context_data(self, **kwargs):
@@ -112,34 +112,26 @@ class SearchEntriesOfDictView(ListView):
         query : str = self.request.GET.get("q")
         search_type = self.request.GET.get("search_type")
         limit_headwords = 300
-        limit_inflected = 300
-        limit_deconstruction = 300
-        limit_grammar = 300
+        #limit_inflected = 300
+        #limit_deconstruction = 300
+        #limit_grammar = 300
         set_of_search_results : set[str] = set()
         if query is not None:
             query = query.strip()
             result : list[str] = []
             if search_type == 'exact':
-                # TODO: SENSELESS SET COMPREHENSION (?):
-                [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__iexact=query).order_by("headword")[:limit_headwords])]
-                set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iexact=query).order_by("inflected_form")[:limit_inflected])]))
-                set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iexact=query).order_by("headword")[:limit_deconstruction])]))
-                set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__iexact=query).order_by("headword")[:limit_grammar])]))
+                # TODO: ADD Sandhi 
+                [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__iexact=query).order_by("pali_1")[:limit_headwords])]
+                #TODO: SPLIT INFLECTED FORM REFS BY COMMA
+                #set_of_search_results.update(set([w.inflected_form for w in list(Inflection_To_Headwords.objects.filter(inflected_form__iexact=query).order_by("inflection")[:limit_inflected])]))
             elif search_type == 'substring_match':
-                [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__icontains=query).order_by("headword")[:limit_headwords])]
-                set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])]))
-                set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__icontains=query).order_by("headword")[:limit_deconstruction])]))
-                set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__icontains=query).order_by("headword")[:limit_grammar])]))
+                [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__icontains=query).order_by("pali_1")[:limit_headwords])]
+                #TODO: SPLIT INFLECTED FORM REFS BY COMMA
+                #set_of_search_results.update(set([w.inflected_form for w in list(Inflection_To_Headwords.objects.filter(inflected_form__icontains=query).order_by("inflected_form")[:limit_inflected])]))
             elif search_type == 'starts_with':
-                [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__istartswith=query).order_by("headword")[:limit_headwords])]
-                set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__istartswith=query).order_by("inflected_form")[:limit_inflected])]))
-                set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__istartswith=query).order_by("headword")[:limit_deconstruction])]))
-                set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__istartswith=query).order_by("headword")[:limit_grammar])]))
+                [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__istartswith=query).order_by("pali_1")[:limit_headwords])]
             elif search_type == 'ends_with':
-                [set_of_search_results.add(h.headword) for h in list(Headword.objects.filter(headword__iendswith=query).order_by("headword")[:limit_headwords])]
-                set_of_search_results.update(set([w.inflected_form for w in list(Inflected_Form.objects.filter(inflected_form__iendswith=query).order_by("inflected_form")[:limit_inflected])]))
-                set_of_search_results.update(set([w.headword for w in list(Deconstruction.objects.filter(headword__iendswith=query).order_by("headword")[:limit_deconstruction])]))
-                set_of_search_results.update(set([w.headword for w in list(Grammar.objects.filter(headword__iendswith=query).order_by("headword")[:limit_grammar])]))
+                [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__iendswith=query).order_by("pali_1")[:limit_headwords])]
             result = list(set_of_search_results)
             return result
         return []
@@ -150,14 +142,15 @@ class SearchEntriesOfDictView(ListView):
 def collect_headword_entries_descrs_from_table_headwords(headword : str = "") -> str:
     result = ""
     try:
-        hw : Headword = Headword.objects.get(pk=headword)
-    except Headword.DoesNotExist:
+        hw : Pali_Word = Pali_Word.objects.get(pk=headword)
+    except Pali_Word.DoesNotExist:
         hw = None
     if hw:
-        result += hw.desc_html
+        result += hw.meaning_1
     return result
 
 
+"""
 def collect_headword_entries_descrs_from_supplementary_tables(key_for_supplementary_tables : str = "") -> str:
     result = ""
     try:
@@ -173,6 +166,7 @@ def collect_headword_entries_descrs_from_supplementary_tables(key_for_supplement
     if dec:
         result += dec.desc_html
     return result
+"""
 
 
 def lookup_word(request : HttpRequest, word : str):
@@ -182,16 +176,20 @@ def lookup_word(request : HttpRequest, word : str):
     if request.get_full_path().startswith('/dict/dpd/lookup_gd/word/'):
         template = "lookup_word_gd.html"
     word = word.replace("ṁ", "ṃ")
-    inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form=word))
+    # TODO: ADD INFLECTED FORM IN OUTPUT
+    #inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form=word))
     result = ""
-    if len(inflected_forms) > 0:
-        for inflected_form in inflected_forms:
-            hw : Headword = Headword.objects.get(pk=inflected_form.link_text)
-            result += hw.desc_html
+    #if len(inflected_forms) > 0:
+    #    for inflected_form in inflected_forms:
+    #        hw : Headword = Headword.objects.get(pk=inflected_form.link_text)
+    #        result += hw.desc_html
+    if False:
+        pass
     else:
         print("collecting from word directly")
         result += collect_headword_entries_descrs_from_table_headwords(word)
-    result += collect_headword_entries_descrs_from_supplementary_tables(word)
+    # TODO: enable collecting suplementary results
+    #result += collect_headword_entries_descrs_from_supplementary_tables(word)
     if result == "":
         response = HttpResponse()
         response.status_code = 404

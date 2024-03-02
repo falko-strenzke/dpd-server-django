@@ -13,6 +13,27 @@ from typing import Optional
 
 DEFAULT_CFG = "config.ini"
 
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
 
 def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqlite3.Connection,
                             limit_cnt : int = 0 ):
@@ -21,7 +42,7 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
     target_cur = target_conn.cursor()
     target_cur.execute("DELETE from dict_construction_element")
     target_cur.execute("DELETE from dict_construction_element_set")
-    target_cur.execute("SELECT headword FROM dict_headword")
+    target_cur.execute("SELECT pali_1 FROM dict_pali_word")
     source_cur = source_conn.cursor()
     constr_elem_set : set[str] = set()
     loop_cnt : int = 0
@@ -116,7 +137,8 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
                 # set an additional entry for the phonetic change
                 print(t.blue("going to insert phonetic_change into db"))
                 target_conn.execute("INSERT INTO dict_construction_element (headword_id, text, prefix_pos, suffix_pos, is_phonetic_change) VALUES (?, ?, ?, ?, ?)", (data.headword, data.phonetic_change, data.prefix_ctr, data.suffix_ctr, True))
-        target_conn.execute("UPDATE dict_headword SET construction_text = ? WHERE headword=?", (construction_elements_line, headword,) )
+        # dict_headword is DEPRECATED. Not needed, column "construction" is already present (with multiple lines, though)
+        #target_conn.execute("UPDATE dict_headword SET construction_text = ? WHERE headword=?", (construction_elements_line, headword,) )
         print(t.blue(f"update for headword {headword} complete"))
     print(t.blue("committing the changes to db"))
     for constr_elem_in_set in constr_elem_set:
@@ -124,10 +146,118 @@ def update_all_construction(source_conn : sqlite3.Connection, target_conn : sqli
         if not constr_elem_in_set.startswith("√") and len(constr_elem_in_set) > max_len:
             continue
         target_conn.execute("INSERT INTO dict_construction_element_set (text) VALUES (?)", (constr_elem_in_set,))
-    target_conn.commit()
+
+
+def copy_table(source_conn : sqlite3.Connection, target_conn : sqlite3.Connection, source_table_name : str, target_table_name : str, columns : list[str]) -> None:
+    target_cur = target_conn.cursor()
+    target_cur.execute("DELETE from " + target_table_name)
+    source_cur = source_conn.cursor()
+    source_cur.execute("SELECT " + ", ".join(columns) + " FROM " + source_table_name)
+    source_rows = source_cur.fetchall()
+    #update_SET : str = ""
+    #for column in columns:
+    #    update_SET += ", " if update_SET != "" else ""
+    #    update_SET + column + "=?"
+    i = 0
+    for source_row in source_rows:
+        printProgressBar(i, len(source_rows), prefix=source_table_name + ':', suffix='Complete', length=50)
+        i = i + 1
+        source_row_quoted = ['"' + str(el) + '"' for el in source_row]
+        insert_cmd : str = "INSERT INTO " + target_table_name + " (" + ", ".join(columns) + ") VALUES( " + ", ".join(source_row_quoted) + ")"
+        #print(insert_cmd)
+        target_cur.execute(insert_cmd)
+
+
+def copy_pali_words_table(source_conn : sqlite3.Connection, target_conn : sqlite3.Connection):
+    cols_to_copy = [
+        'pali_1',
+        'pali_2',
+        'pos',
+        'grammar',
+        'derived_from',
+        'verb',
+        'trans',
+        'plus_case',
+        'meaning_1',
+        'meaning_2',
+        'meaning_lit',
+        'sanskrit',
+        'root_key',
+        'root_sign',
+        'root_base',
+        'construction',
+        'derivative',
+        'suffix',
+        'phonetic',
+        'compound_type',
+        'compound_construction',
+        'non_root_in_comps',
+        'synonym',
+        'variant',
+        'stem',
+        'pattern',
+    ]
+    copy_table(source_conn, target_conn, "pali_words", "dict_pali_word", cols_to_copy)
 
 
 
+def copy_pali_roots_table(source_conn : sqlite3.Connection, target_conn : sqlite3.Connection) -> None:
+    cols_to_copy = [
+        'root',
+        'root_in_comps',
+        #'root_has_verb', TODO: FILL AS BOOLEAN
+        'root_group',
+        'root_sign',
+        'root_meaning',
+        'sanskrit_root',
+        'sanskrit_root_meaning',
+        'sanskrit_root_class',
+        'root_example',
+        'dhatupatha_num',
+        'dhatupatha_root',
+        'dhatupatha_pali',
+        'dhatupatha_english',
+        'dhatumanjusa_num',
+        'dhatumanjusa_root',
+        'dhatumanjusa_pali',
+        'dhatumanjusa_english',
+        'dhatumala_root',
+        'dhatumala_pali',
+        'dhatumala_english',
+        'panini_root',
+        'panini_sanskrit',
+        'panini_english',
+        'note',
+        'matrix_test',
+        'root_info',
+        'root_matrix'
+    ]
+    copy_table(source_conn, target_conn, "pali_roots", "dict_pali_root", cols_to_copy)
+
+
+
+def copy_inflection_to_headwords_table(source_conn : sqlite3.Connection, target_conn : sqlite3.Connection):
+    cols_to_copy = [
+        'inflection',
+        'headwords'
+    ]
+    copy_table(source_conn, target_conn, "inflection_to_headwords", "dict_inflection_to_headwords", cols_to_copy)
+
+
+def copy_sandhi_table(source_conn : sqlite3.Connection, target_conn : sqlite3.Connection):
+    cols_to_copy = [
+        'sandhi',
+        'split'
+    ]
+    copy_table(source_conn, target_conn, "sandhi", "dict_sandhi", cols_to_copy)
+
+
+
+def copy_tables_from_dpd_db(source_conn : sqlite3.Connection, target_conn : sqlite3.Connection) -> None:
+    copy_pali_words_table(source_conn, target_conn)
+    copy_pali_roots_table(source_conn, target_conn)
+    copy_inflection_to_headwords_table(source_conn, target_conn)
+    copy_sandhi_table(source_conn, target_conn)
 
 
 def configure(ctx, param, filename):
@@ -166,7 +296,12 @@ def main(target_db : str, source_db : str, limit : int):
        exit(1)
     source_conn : sqlite3.Connection = sqlite3.connect(source_db)
     target_conn : sqlite3.Connection = sqlite3.connect(target_db)
+
+    copy_tables_from_dpd_db(source_conn, target_conn)
     update_all_construction(source_conn=source_conn, target_conn=target_conn, limit_cnt=limit)
+    target_conn.commit()
+
+
 
 
 if __name__ == "__main__":
