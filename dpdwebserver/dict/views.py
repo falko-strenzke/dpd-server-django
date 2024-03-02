@@ -107,6 +107,9 @@ class SearchEntriesOfDictView(ListView):
         return context
 
 
+    def search_table_generically(self, query : str, match_suffix_wo__ : str, set_of_search_results : set[str], object_class: type[Pali_Word | Pali_Root | Inflection_To_Headwords], column_to_add : str, column_to_filter : str, limit : int) -> list[str]:
+        [set_of_search_results.add(getattr(h, column_to_add)) for h in list(object_class.objects.filter(**{f'{column_to_filter}__{match_suffix_wo__}': query}).order_by(column_to_filter)[:limit])]
+
 
     def get_queryset(self): # new
         query : str = self.request.GET.get("q")
@@ -119,9 +122,12 @@ class SearchEntriesOfDictView(ListView):
         if query is not None:
             query = query.strip()
             result : list[str] = []
+
             if search_type == 'exact':
                 # TODO: ADD Sandhi 
-                [set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__iexact=query).order_by("pali_1")[:limit_headwords])]
+                self.search_table_generically(query, "iexact", set_of_search_results, Pali_Word, "pali_1", "pali_2", limit_headwords)
+                #[set_of_search_results.add(h.pali_1) for h in list(Pali_Word.objects.filter(pali_2__iexact=query).order_by("pali_1")[:limit_headwords])]
+                #set_of_search_results.update(set([w.inflected_form for w in list(Inflection_To_Headwords.objects.filter(inflected_form__iexact=query).order_by("inflection")[:limit_inflected])]))
                 #TODO: SPLIT INFLECTED FORM REFS BY COMMA
                 #set_of_search_results.update(set([w.inflected_form for w in list(Inflection_To_Headwords.objects.filter(inflected_form__iexact=query).order_by("inflection")[:limit_inflected])]))
             elif search_type == 'substring_match':
