@@ -7,6 +7,14 @@ from django.views.generic import ListView
 import markdown
 #from django.db.models.query import QuerySet
 from .models import Pali_Word, Pali_Root, Inflection_To_Headwords, Sandhi, Construction_Element, Construction_Element_Set
+from .dpd_html_rendering import render_headword_entry_html
+
+
+def replace_chars_in_query(q) -> str:
+    if q is None:
+        return None
+    q = q.replace("ṁ", "ṃ")
+    return q
 
 
 def render_markdown_file(request : HttpRequest):
@@ -38,6 +46,7 @@ class SearchByConsructionView(ListView):
     def get_context_data(self, **kwargs):
 
         query = self.request.GET.get("q")
+        query = replace_chars_in_query(query)
         context = super(ListView, self).get_context_data(**kwargs)
         context['query_string_with_label'] = "search query: " + query + "\n" if query not in [None, ''] else ''
         context['query_string'] = query if query not in [None, ''] else ''
@@ -78,6 +87,7 @@ class SearchByConsructionView(ListView):
 
     def get_queryset(self): # new
         query = self.request.GET.get("q")
+        query = replace_chars_in_query(query)
         search_type = self.request.GET.get("search_type")
         print(search_type)
         if query is not None:
@@ -96,6 +106,7 @@ class SearchEntriesOfDictView(ListView):
     def get_context_data(self, **kwargs):
 
         query = self.request.GET.get("q")
+        query = replace_chars_in_query(query)
         context = super(ListView, self).get_context_data(**kwargs)
         context['query_string_with_label'] = "search query: " + query + "\n" if query not in [None, ''] else ''
         context['query_string'] = query if query not in [None, ''] else ''
@@ -130,6 +141,7 @@ class SearchEntriesOfDictView(ListView):
 
     def get_queryset(self): # new
         query : str = self.request.GET.get("q")
+        query = replace_chars_in_query(query)
         search_type = self.request.GET.get("search_type")
         set_of_search_results : set[str] = set()
         if query is not None:
@@ -163,7 +175,7 @@ def collect_headword_entries_descrs_from_table_headwords(headword : str = "") ->
     except Pali_Word.DoesNotExist:
         hw = None
     if hw:
-        result += hw.simple_text_with_pali() + "<br>"
+        result += render_headword_entry_html(hw) + "<br><br>"
     return result
 
 
@@ -172,7 +184,7 @@ def collect_inflected_form_results(word : str) -> str:
     hw_list_from_inflected : list[str] = []
     [hw_list_from_inflected.extend(h.headwords.split(",")) for h in list(Inflection_To_Headwords.objects.filter(inflection__iexact=word).order_by("inflection"))]
     for headword in hw_list_from_inflected:
-        result += Pali_Word.objects.get(pali_1=headword).simple_text_with_pali() + "<br>"
+        result += render_headword_entry_html(Pali_Word.objects.get(pali_1=headword)) + "<br><br>"
     return result
 
 
@@ -190,10 +202,10 @@ def lookup_word(request : HttpRequest, word : str):
     template = "lookup_word.html"
     if request.get_full_path().startswith('/dict/dpd/lookup_gd/word/'):
         template = "lookup_word_gd.html"
-    word = word.replace("ṁ", "ṃ")
+    word = replace_chars_in_query(word)
     # TODO: ADD INFLECTED FORMS IN OUTPUT
     #inflected_forms : list[Inflected_Form] = list(Inflected_Form.objects.filter(inflected_form=word))
-    result = "<strong>" + word + "</strong><br>"
+    result = "<strong> Results for " + word + "</strong><br><br>"
     #if len(inflected_forms) > 0:
     #    for inflected_form in inflected_forms:
     #        hw : Headword = Headword.objects.get(pk=inflected_form.link_text)

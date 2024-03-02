@@ -1,7 +1,6 @@
 from django.db import models
 
 
-
 class Pali_Word(models.Model):
     pali_1 = models.CharField(max_length=255, unique=True, primary_key=True)
     pali_2 = models.CharField(max_length=255)
@@ -32,6 +31,10 @@ class Pali_Word(models.Model):
 
     def simple_text_with_pali(self):
         return self.pali_1 + " – " + self.meaning_1
+
+
+    def simple_html_with_pali(self):
+        return dpd_html_rendering.make_meaning_html(self)
 
 
 class Pali_Root(models.Model):
